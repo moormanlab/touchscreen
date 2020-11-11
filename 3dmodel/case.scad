@@ -67,11 +67,43 @@ module sensorC(){
   }
 }
 
+
+cableCL = 130; //min 35
+cableCLbase = 30;
+innerD = 9;
+innerDbase= 18;
+module cableCoverHalf() {
+  difference(){
+    union(){
+       cylinder(h=cableCLbase+3,d=innerDbase+5,$fn=50);
+       hull(){
+        translate([0,0,cableCLbase+2])cylinder(h=1,d=innerDbase+5,$fn=50);
+        translate([0,0,cableCLbase+7])cylinder(h=1,d=innerD+5,$fn=50);
+       }
+       cylinder(h=cableCL,d=innerD+5,$fn=50);
+    }
+    translate([0,0,-1])cylinder(h=cableCLbase+2,d=innerDbase,$fn=50);
+    hull(){
+        translate([0,0,cableCLbase])cylinder(h=1,d=innerDbase,$fn=50);
+        translate([0,0,cableCLbase+5])cylinder(h=1,d=innerD,$fn=50);
+    }
+    translate([0,0,cableCLbase+5])cylinder(h=cableCL,d=innerD,$fn=50);
+    translate([-innerDbase/2-4.5,-innerDbase-9,-1])cube([innerDbase+9,innerDbase+9,cableCL+2]);
+  }
+  for(i=[0,1])mirror([i,0,0])
+  translate([innerD/2+2+5,1,cableCL-5])
+  difference(){
+    union(){
+      translate([-2.5,0,0])cube([5,2,10],center=true);
+      rotate([90,0,0])cylinder(h=2,d=10,$fn=80,center=true);
+    }
+    rotate([90,0,0])cylinder(h=3,d=3.5,$fn=30,center=true);
+  }
+}
+
 boxL = touchL+11;
 boxH = touchH+11;
 boxD = 80;
-
-
 module box(){
   difference(){
     translate([0,0,boxH/2])cube([boxL,boxD,boxH],center=true);
@@ -89,14 +121,13 @@ module box(){
     for(i=[0,1])mirror([i,0,0])
       translate([boxL/2-2.5,-boxD/2+6,boxH/2+5])rotate([0,90,0])cylinder(h=6,d=3.4,$fn=20,center=true);
     //cables
-    translate([touchL/2-35,boxD/2-2-22,boxH-2.5])cylinder(h=6,d=21,$fn=60,center=true);
+    translate([touchL/2-35,boxD/2-2-22,boxH-2.5])cylinder(h=6,d=innerDbase+5.5,$fn=60,center=true);
     //holes for plate
     translate([boxL/2-5.5,-boxD/2-2.5,5])cube([6,55,9]);
     translate([boxL/2-6,-12,14]){
       for(i=[-1,1])translate([0,i*22.75,18])rotate([0,90,0])cylinder(h=7,d=4.5,$fn=30);
       translate([0,0,18])rotate([-90,0,0])rotate([0,90,0])cylinder(h=7,d=8,$fn=30); //d=15
     }
-      
   }
 }
 
@@ -113,27 +144,10 @@ module cover(){
     }
 }
 
-cableCL = 100;
-innerD = 15;
-module cableCoverHalf() {
-  difference(){
-    cylinder(h=cableCL,d=innerD+5,$fn=50);
-    translate([0,0,-1])cylinder(h=cableCL+2,d=innerD,$fn=50);
-    translate([-innerD/2-4.5,-innerD-9,-1])cube([innerD+9,innerD+9,cableCL+2]);
-  }
-  for(i=[0,1])mirror([i,0,0])
-  translate([innerD-1,1,cableCL-5])
-  difference(){
-    union(){
-      translate([-2.5,0,0])cube([5,2,10],center=true);
-      rotate([90,0,0])cylinder(h=2,d=10,$fn=80,center=true);
-    }
-    rotate([90,0,0])cylinder(h=3,d=3.5,$fn=30,center=true);
-  }
-}
+
 
 ////show
-translate([touchL/2-35,boxD/2-2-22,boxH-4.1]){
+translate([touchL/2-35,boxD/2-2-22,boxH-4.1+0]){
   cableCoverHalf();
   rotate([0,0,180])cableCoverHalf();
 }
