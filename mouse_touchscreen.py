@@ -23,8 +23,9 @@ if os.uname()[4].startswith('arm'):
     IS_RASPBERRY_PI = True
 
 if IS_RASPBERRY_PI == True:
-    from gpiozero import Buzzer
-    bz = Buzzer(3)
+    from gpiozero import TonalBuzzer
+    from gpiozero.tones import Tone
+    bz = TonalBuzzer(17)
 
 
 #Initialize logging 
@@ -83,9 +84,10 @@ def check_collision(object, mouse_pos, left_click, color=(0,0,0)):
         pygame.display.flip()
         pygame.mouse.set_pos(0,0)
         if IS_RASPBERRY_PI == True:
-            bz.on()
+            bz.play(Tone(440.0))
         pygame.time.wait(1000) #pauses program for 1000ms for flash
-        bz.off()
+        if IS_RASPBERRY_PI == True:
+            bz.stop()
         logging.info('Shape: {}'.format(object))
 
 
