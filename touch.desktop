@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=MiceTS
+Icon=/home/pi/touchscreen/mouse.xpm
+Exec=/usr/bin/python3 /home/pi/touchscreen/mouse_touchscreen.py
+Comment[en_US]=Mouse Touchscreen Training
+StartupNotify=true
+Categories=Utility
