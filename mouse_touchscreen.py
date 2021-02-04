@@ -13,20 +13,19 @@ from time import sleep
 import logging 
 import io
 import os
+from hal import Buzzer, IRSensor, Valve, isRaspberryPI
 
 pygame.init()
 pygame.display.set_caption('Mouse Touchscreen Program')
 
-#Checks if system is a raspberry pi 
-IS_RASPBERRY_PI = False
-if os.uname()[4].startswith('arm'):
-    IS_RASPBERRY_PI = True
+buzz = Buzzer()
 
-if IS_RASPBERRY_PI == True:
-    from gpiozero import TonalBuzzer
-    from gpiozero.tones import Tone
-    bz = TonalBuzzer(17)
+def sensorHandler():
+    print('Decide what to do when the IRbeam was broken')
 
+sensor = IRSensor(sensorHandler)
+
+valve = Valve()
 
 #Initialize logging 
 logging.basicConfig(filename ='test.log', level= logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
@@ -67,7 +66,7 @@ screen = pygame.display.set_mode([screen_width, screen_height])
 logging.info('Program Started')
 
 #make fullscreen on touchscreen
-if IS_RASPBERRY_PI == True:
+if isRaspberryPI():
     screen = pygame.display.set_mode((800, 400), pygame.FULLSCREEN)
 
 # Function to check collision of mouse with shape 
@@ -83,15 +82,16 @@ def check_collision(object, mouse_pos, left_click, color=(0,0,0)):
         #effect.play() #plays sound if uncommented
         pygame.display.flip()
         pygame.mouse.set_pos(0,0)
-        if IS_RASPBERRY_PI == True:
-            bz.play(Tone(440.0))
-        pygame.time.wait(1000) #pauses program for 1000ms for flash
-        if IS_RASPBERRY_PI == True:
-            bz.stop()
+        buzz.play()
+        valve.drop()
+        #if IS_RASPBERRY_PI == True:
+        #    bz.play(Tone(440.0))
+        #pygame.time.wait(1000) #pauses program for 1000ms for flash
+        #    bz.stop()
         logging.info('Shape: {}'.format(object))
 
 
-print(IS_RASPBERRY_PI)
+print('Running in Raspberry PI = {}'.format(isRaspberryPI()))
 
 running = True
 off = False 
@@ -100,7 +100,7 @@ off = False
 while running:
     #turn on/off visibility of mouse cursor (True=visible, False=hidden)
     #Turns visibility off if Raspberry pi is connected
-    if IS_RASPBERRY_PI==True:
+    if isRaspberryPI():
         pygame.mouse.set_visible(off)
     
     #draw test shapes
@@ -150,7 +150,7 @@ while running:
     pygame.draw.rect(screen, red, (400,200, 100,100))
     pygame.draw.rect(screen, blue, (600,200, 125,100))
 
-    if IS_RASPBERRY_PI == True:
+    if isRaspberryPI():
         pygame.mouse.set_pos(0,0)
         
     #Reset mouse position every loop to avoid problems with touchscreens. Comment this if using a computer
