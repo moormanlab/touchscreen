@@ -5,6 +5,7 @@ Hardware Abstraction Layer for Mice Touchscreen Project
 import os
 import time
 import logging
+import platform
 logger = logging.getLogger('touchHAL')
 
 buzzerPIN = 17 # 27 or 22
@@ -16,11 +17,16 @@ PC           = 1
 MACOS        = 2
 
 def _getArch():
+    # I used platform library instead os library
+    if platform.uname()[0] == 'Windows':
+        return PC
+
     arch = os.uname().machine
     if arch.startswith('arm'):
         return RASPBERRY_PI
-    elif arch.startswith('x86') or arch.startswith('i686'):
-        return PC
+    # 'os.uname()' does not work in windows
+    # elif arch.startswith('x86') or arch.startswith('i686'):
+    #     return PC
     else:
         return MAC
 
