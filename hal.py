@@ -2,33 +2,35 @@
 Hardware Abstraction Layer for Mice Touchscreen Project
 '''
 
-import os
 import time
 import logging
 import platform
 logger = logging.getLogger('touchHAL')
 
-buzzerPIN = 17 # 27 or 22
+buzzerPIN = 17
 irPIN     = 23
-valvePIN  = 25
+valvePIN  = 26
 
 RASPBERRY_PI = 0
 PC           = 1
 MACOS        = 2
+LINUX_X86    = 3
 
 def _getArch():
-    # I used platform library instead os library
-    if platform.uname()[0] == 'Windows':
+    platf = platform.uname()
+    if platf[0] == 'Windows':
         return PC
-
-    arch = os.uname().machine
-    if arch.startswith('arm'):
-        return RASPBERRY_PI
-    # 'os.uname()' does not work in windows
-    # elif arch.startswith('x86') or arch.startswith('i686'):
-    #     return PC
+    elif platf[0] == 'Linux':
+        if platf[4].startswith('arm'):
+            return RASPBERRY_PI
+        elif platf[4].startswith('x86'):
+            return LINUX_X86
+        else:
+            raise NameError('Linux architecture not supported')
+    elif platf[0] == 'Darwin':
+        return MACOS
     else:
-        return MAC
+        raise NameError('Architecture not recongnized')
 
 #Checks if system is a Raspberry PI 
 def isRaspberryPI():
@@ -37,111 +39,232 @@ def isRaspberryPI():
 ###########################
 ## Buzzer
 ###########################
-class _DummyBuzzer():
-    def __init__(self):
-        pass
-    
-    def play(self,seconds=1.0):
-        time.sleep(seconds)
 
 class Buzzer():
-    def __init__(self):
-
-        if _getArch() == RASPBERRY_PI:
-            from gpiozero import TonalBuzzer
-            self.arch = RASPBERRY_PI
-            self.bz= TonalBuzzer(buzzerPIN)
-        else:
-            self.arch = PC
-            self.bz = _DummyBuzzer()
-
-
-    def play(self,seconds=1.0):
-        if self.arch == RASPBERRY_PI:
-            from gpiozero.tones import Tone
-            self.bz.play(Tone(440.0))
+    class _dummyBuzzer:
+        def __init__(self):
+            self._arch = PC
+            pass
+    
+        def play(self,frec=440.,duration=1.0):
             time.sleep(seconds)
-            self.bz.stop()
-        else:
+
+        def playTune(self,tune):
             self.bz.play(1.0)
 
+    class _piBuzzer:
+        def __init__(self):
+            from gpiozero import TonalBuzzer
+            self._arch = RASPBERRY_PI
+            self.bz= TonalBuzzer(buzzerPIN)
+
+        def play(self,frec=440.0,duration=1.0):
+            from gpiozero.tones import Tone
+            self.bz.play(Tone(float(frec)))
+            time.sleep(float(duration))
+            self.bz.stop()
+
+        def playTune(self,tune):
+            from gpiozero.tones import Tone
+            for note, duration in tune:
+                self.bz.play(note)
+                time.sleep(float(duration))
+            self.bz.stop()
+
+    __instance = None
+
+    def __init__(self):
+        if Buzzer.__instance is None:
+
+            if _getArch() == RASPBERRY_PI:
+                Buzzer.__instance=Buzzer._piBuzzer()
+            else:
+                Buzzer.__instance=Buzzer._dummyBuzzer()
+
+    def __getattr__(self, attr):
+        """ Delegate access to implementation """
+        return getattr(self.__instance, attr)
+
+    def __setattr__(self, attr, value):
+        """ Delegate access to implementation """
+        return setattr(self.__instance, attr, value)
+
+    def play(self,frec=440.0,duration=1.0):
+        return self.__instance.play(frec,duration)
+
+    def playTune(self,tune):
+        return self.__instance.playTune(tune)
 
 ###########################
 ## IRSensor
 ###########################
-class _DummySensor(object):
-    def __init__(self):
-        self.time = int(time.time())
-    
-    def isPressed(self):
-        diff = int(time.time()) - self.time
-        return (diff%2==0)
-
-
 class IRSensor(object):
-    def __init__(self,handler=None):
-        self.handler = handler
-        if _getArch() == RASPBERRY_PI:
+    class _dummySensor(object):
+        def __init__(self):
+            self.sensor = _DummySensor()
+            self.time = int(time.time())
+        
+        def isPressed(self):
+            diff = int(time.time()) - self.time
+            return (diff%2==0)
+
+        def setHandler(self,handler):
+            pass
+
+        def releaseHandler(self):
+            pass
+
+    class _piSensor:
+        def __init__(self,handler=None):
             from gpiozero import Button
+            self.handler = handler
             self.arch = RASPBERRY_PI
             self.sensor = Button(irPIN)
             self.sensor.when_pressed = self._sensorHandler
-        else:
-            self.arch = PC
-            self.sensor = _DummySensor()
+
+        def _sensorHandler(self):
+            try:
+                if self.handler is not None:
+                    self.handler()
+                else:
+                    logger.info('generic handler')
+            except Exception as e:
+                logger.error(traceback.format_exc())
+                logger.info('error handled module sensor')
+
+        def isPressed(self):
+            return self.sensor.isPressed()
+
+        def setHandler(self,handler):
+            self.handler = handler
+
+        def releaseHandler(self):
+            self.handler = None
+
+    __instance = None
+    __arch = None
+
+    def __init__(self,handler=None):
+        if IRSensor.__instance is None:
+            IRSensor.__arch = _getArch()
+            if  IRSensor.__arch == RASPBERRY_PI:
+                IRSensor.__instance=IRSensor._piSensor(handler)
+            else:
+                IRSensor.__instance=IRSensor._dummySensor(handler)
 
     def _sensorHandler(self):
         try:
-            print('generic handler')
+            logger.info('generic handler')
             if self.handler is not None:
                 self.handler()
         except Exception as e:
             logger.error(traceback.format_exc())
-            print('error handled module sensor')
+            logger.info('error handled module sensor')
+
+    def __getattr__(self, attr):
+        """ Delegate access to implementation """
+        return getattr(self.__instance, attr)
+
+    def __setattr__(self, attr, value):
+        """ Delegate access to implementation """
+        return setattr(self.__instance, attr, value)
 
     def isPressed(self):
-        return self.sensor.isPressed()
+        return self.__instance.isPressed()
+
+    def setHandler(self,handler):
+        return self.__instance.setHandler(handler)
+
+    def releaseHandler(self):
+        return self.__instance.releaseHandler(handler)
 
 
 ###########################
 ## Valve
 ###########################
-class _DummyValve(object):
-    def __init__(self):
-        pass
-
-    def off(self):
-        pass
-    
-    def on(self):
-        pass
-
-    def blink(self,on_time=1.0,n=1):
-        pass
-
 class Valve(object):
-    def __init__(self,openTime=.4):
-        if _getArch() == RASPBERRY_PI:
+    class _dummyValve:
+        def __init__(self):
+            pass
+
+        def off(self):
+            pass
+        
+        def on(self):
+            pass
+
+        def blink(self,on_time=1.0,n=1):
+            pass
+
+    class _piValve:
+        def __init__(self,openTime=.4):
             from gpiozero import LED
-            self.arch = RASPBERRY_PI
             self.valve = LED(valvePIN)
-        else:
-            self.arch = PC
-            self.valve = _DummyValve()
-        self.openTime = openTime
+            self.openTime = openTime
+
+        def setOpenTime(self,openTime):
+            self.openTime = openTime
+
+        def open(self):
+            logger.info('valve on')
+            self.valve.on()
+
+        def close(self):
+            logger.info('valve off')
+            self.valve.off()
+
+        def drop(self):
+            logger.info('valve drop')
+            self.valve.blink(on_time=self.openTime,n=1)
+
+    __instance = None
+    __arch = None
+
+    def __init__(self):
+        if Valve.__instance is None:
+            Valve.__arch = _getArch()
+            if  Valve.__arch == RASPBERRY_PI:
+                Valve.__instance=Valve._piValve()
+            else:
+                Valve.__instance=Valve._dummyValve()
+
+    def __getattr__(self, attr):
+        """ Delegate access to implementation """
+        return getattr(self.__instance, attr)
+
+    def __setattr__(self, attr, value):
+        """ Delegate access to implementation """
+        return setattr(self.__instance, attr, value)
 
     def setOpenTime(self,openTime):
-        self.openTime = openTime
+        return self.__instance.setOpenTime(openTime)
 
     def open(self):
-        print('valve on')
-        self.valve.on()
+        return self.__instance.open()
 
     def close(self):
-        print('valve off')
-        self.valve.off()
+        return self.__instance.close()
 
     def drop(self):
-        print('valve drop')
-        self.valve.blink(on_time=self.openTime,n=1)
+        return self.__instance.drop()
 
+if __name__=='__main__':
+#    val = Valve()
+#    val.open()
+#    time.sleep(.5)
+#    val.close()
+    buzz = Buzzer()
+    buzz.play(440,0.5)
+#
+#    tune = [('C#4', 0.2), ('D4', 0.2), (None, 0.2),
+#            ('Eb4', 0.2), ('E4', 0.2), (None, 0.6),
+#            ('F#4', 0.2), ('G4', 0.2), (None, 0.6),
+#            ('Eb4', 0.2), ('E4', 0.2), (None, 0.2),
+#            ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
+#            ('C4', 0.2), ('B4', 0.2), (None, 0.2),
+#            ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
+#            ('B4', 0.2), ('Bb4', 0.5), (None, 0.6),
+#            ('A4', 0.2), ('G4', 0.2), ('E4', 0.2), 
+#            ('D4', 0.2), ('E4', 0.2)]
+#
+#    buzz.playTune(tune)
