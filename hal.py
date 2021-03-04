@@ -47,7 +47,7 @@ class Buzzer():
             pass
     
         def play(self,frec=440.,duration=1.0):
-            time.sleep(seconds)
+            time.sleep(duration)
 
         def playTune(self,tune):
             self.bz.play(1.0)
@@ -100,8 +100,7 @@ class Buzzer():
 ###########################
 class IRSensor(object):
     class _dummySensor(object):
-        def __init__(self):
-            self.sensor = _DummySensor()
+        def __init__(self,handler=None):
             self.time = int(time.time())
         
         def isPressed(self):
@@ -193,7 +192,7 @@ class Valve(object):
         def on(self):
             pass
 
-        def blink(self,on_time=1.0,n=1):
+        def drop(self):
             pass
 
     class _piValve:
