@@ -21,7 +21,7 @@ menu = pygame_menu.Menu(480,800,'Mouse Touchscreen Menu',
                         onclose=pygame_menu.events.RESET,
                         touchscreen_enabled=True,
                         joystick_enabled=False,
-                        mouse_enabled =False)
+                        mouse_enabled =False if isRaspberryPI() else True)
 
 # Creates button for behavioral test 1
 # Uses Jason's behavioral test script
