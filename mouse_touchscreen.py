@@ -6,18 +6,17 @@ This program utilizes the pygame library to create an interactive program that m
 interact with on a touchscreen that is run by a Raspberry pi. This program is designed to 
 eventually be generalizable to a variety of different tasks.
 '''
+import pygame
+import time
+import logging 
+import io
+import os
+from hal import Buzzer, IRSensor, Valve, isRaspberryPI
 # Puts entire script into function to call in menu script
 def behavioral_test_1():
 
     # Import and initialize the pygame library
-    import pygame
-    import time
-    import logging 
-    import io
-    import os
-    from hal import Buzzer, IRSensor, Valve, isRaspberryPI
 
-    pygame.init()
     pygame.display.set_caption('Mouse Touchscreen Program')
 
     buzz = Buzzer()
@@ -63,34 +62,32 @@ def behavioral_test_1():
 
     # Set up the display window. Touchscreen dimensions = 800x400
     screen_width = 800 
-    screen_height = 400
+    screen_height = 480
     screen = pygame.display.set_mode([screen_width, screen_height])
     logging.info('Program Started')
 
     #make fullscreen on touchscreen
     if isRaspberryPI():
-        screen = pygame.display.set_mode((800, 400), pygame.FULLSCREEN)
+        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
     # Function to check collision of mouse with shape 
-    def check_collision(object, mouse_pos, left_click, color=(0,0,0)):
-        if object.collidepoint(mouse_pos) and left_click:
+    def check_collision(objectT, mouse_pos, color=(0,0,0)):
+        if objectT.collidepoint(mouse_pos):
             '''
             Function to check if mouse click collides with one of the objects. 
             Takes in object, mouse position (tuple of coordinates) and pressed (boolean, True if mouse was clicked)
             Default argument for color is black, but can be changed. 
             '''
-            print('You pressed', object)
+            print('You pressed', objectT)
             screen.fill(color)
             #effect.play() #plays sound if uncommented
             pygame.display.flip()
             pygame.mouse.set_pos(0,0)
             buzz.play()
+            pygame.time.wait(1000) #pauses program for 1000ms for flash
             valve.drop()
-            #if IS_RASPBERRY_PI == True:
-            #    bz.play(Tone(440.0))
-            #pygame.time.wait(1000) #pauses program for 1000ms for flash
-            #    bz.stop()
-            logging.info('Shape: {}'.format(object))
+            logging.info('Shape: {}'.format(objectT))
 
 
     print('Running in Raspberry PI = {}'.format(isRaspberryPI()))
@@ -102,8 +99,8 @@ def behavioral_test_1():
     while running:
         #turn on/off visibility of mouse cursor (True=visible, False=hidden)
         #Turns visibility off if Raspberry pi is connected
-        if isRaspberryPI():
-            pygame.mouse.set_visible(off)
+        #if isRaspberryPI():
+            #pygame.mouse.set_visible(off)
         
         #draw test shapes
         obj1= pygame.draw.circle(screen, yellow, (75,250), 57)
@@ -116,25 +113,24 @@ def behavioral_test_1():
         closing_box = pygame.draw.rect(screen, black, (700,0, 100,100))
 
         mouse_pos = pygame.mouse.get_pos()
-
+	
+        eventsToCatch = [pygame.MOUSEBUTTONDOWN, pygame.FINGERUP]
         for event in pygame.event.get():
             #check for mousebutton 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN or event.type==pygame.FINGERUP:
+                print(event.type)
                 mouse_pos= pygame.mouse.get_pos()
                 print('The position of the cursor is', mouse_pos)
                 logging.info('Coordinates:' + str(mouse_pos))
-
-
-            #mouse_pos = pygame.mouse.get_pos()
-            left_click, pressed2, right_click = pygame.mouse.get_pressed() #pressed 1 is left click, pressed 3 is right click 
-            
-            # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
-            check_collision(obj1,mouse_pos,left_click, yellow)
-            check_collision(obj2,mouse_pos,left_click, purple)
-            check_collision(obj3,mouse_pos,left_click, red)
-            check_collision(obj4,mouse_pos,left_click, blue)
-            # for obj in objList:
-            #     check_collision(obj,mouse_pos,left_click,white)
+                left_click, pressed2, right_click = pygame.mouse.get_pressed() #pressed 1 is left click, pressed 3 is right click 
+                if left_click or event.type==pygame.FINGERUP:
+                    # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
+                    check_collision(obj1,mouse_pos, yellow)
+                    check_collision(obj2,mouse_pos, purple)
+                    check_collision(obj3,mouse_pos, red)
+                    check_collision(obj4,mouse_pos, blue)
+                    # for obj in objList:
+                    #     check_collision(obj,mouse_pos,left_click,white)
 
             #escape from program
             if event.type == KEYDOWN:
@@ -150,11 +146,11 @@ def behavioral_test_1():
                     running = False
             
             # When mouse is clicked or screen touched, a timer starts
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
                 timer = time.time()
             # When you unclick mouse or stop touching screen, timer stops
             # Records amount of time you held mouse button or touched screen
-            elif event.type == pygame.MOUSEBUTTONUP:
+            elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
                 timer = time.time() - timer
                 timer = str(timer)[:5]
                 timer = float(timer)
@@ -163,7 +159,8 @@ def behavioral_test_1():
                 # Returns to menu if top right corner was pressed for more than 2 seconds
                 if curs_in_box and timer > 2:
                     print('User has pressed top right corner for 2 seconds. Returning to menu.')
-                    return      
+                    running = False
+                    #return      
     
     
         # Fill the background with black
@@ -178,8 +175,8 @@ def behavioral_test_1():
         # Draw invisible closing box
         pygame.draw.rect(screen, black, (700,0, 100,100))
 
-        if isRaspberryPI():
-            pygame.mouse.set_pos(0,0)
+        #if isRaspberryPI():
+        #    pygame.mouse.set_pos(0,0)
             
         #Reset mouse position every loop to avoid problems with touchscreens. Comment this if using a computer
         #pygame.mouse.set_pos(0,0)
@@ -188,12 +185,13 @@ def behavioral_test_1():
         pygame.display.flip()
 
     # Done! Time to quit.
-    pygame.quit()
+    return
 
+if __name__ == '__main__':
+    pygame.init()
+    behavioral_test_1()
+    #pygame.quit()
 
-
-# Check if the object "collided" with the mouse pos and if the left mouse button was pressed
-        # if circ1.collidepoint(mouse_pos) and left_click:
         #     print('You pressed the circle')
         #     screen.fill(purple)
         #     pygame.display.flip()
