@@ -5,6 +5,16 @@ import pygame_menu
 import mouse_touchscreen
 from hal import isRaspberryPI
 
+#colors
+red = (255,0,0)
+green = (0,255,0)
+blue = (0,0,255)
+black = (0,0,0)
+yellow = (255,255,0)
+purple = (255,0,255)
+white = (255,255,255)
+deepskyblue = (0,191,255)
+
 # Initializes pygame
 pygame.init()
 
@@ -27,10 +37,10 @@ menu = pygame_menu.Menu(480,800,'Mouse Touchscreen Menu',
 # Uses Jason's behavioral test script
 menu.add_button('Behavioral Test 1', mouse_touchscreen.behavioral_test_1)
 
-def behavioral_test_2():
-    print('test 2 placeholder')
+# def behavioral_test_2():
+#     print('test 2 placeholder')
 
-menu.add_button('Behavioral Test 2', behavioral_test_2)
+menu.add_button('Behavioral Test 2', mouse_touchscreen.behavioral_test_2)
 
 def behavioral_test_3():
     print('test 3 placeholder')

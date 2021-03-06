@@ -193,6 +193,7 @@ class Valve(object):
             pass
 
         def drop(self):
+            logger.info('valve drop computer')
             pass
 
     class _piValve:
