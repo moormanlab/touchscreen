@@ -196,6 +196,10 @@ class Valve(object):
             logger.info('valve drop computer')
             pass
 
+        def setOpenTime(self, openTime):
+            pass
+
+
     class _piValve:
         def __init__(self,openTime=.4):
             from gpiozero import LED

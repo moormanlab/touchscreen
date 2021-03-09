@@ -21,8 +21,8 @@ yellow = (255,255,0)
 purple = (255,0,255)
 white = (255,255,255)
 deepskyblue = (0,191,255)
-
-
+gray = (128,128,128)
+ 
 
 #Functions to add
 ''' 
@@ -138,20 +138,19 @@ def behavioral_test_1():
             
             # When mouse is clicked or screen touched, a timer starts
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-                timer = time.time()
+                startTimer = time.time()
             # When you unclick mouse or stop touching screen, timer stops
 
             # Records amount of  time you held mouse button or touched screen
             elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
-                timer = time.time() - timer
-                timer = str(timer)[:5]
-                timer = float(timer)
+                clickTime = round((time.time() - startTimer),4)
+                print(clickTime)
                 # Checks if screen was pressed in top right corner
                 curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
                 # Returns to menu if top right corner was pressed for more than 2 seconds
-                if curs_in_box and timer > 2:
-                    logging.info('Returned to menu')
+                if curs_in_box and clickTime > 2:
                     print('User has pressed top right corner for 2 seconds. Returning to menu.')
+                    #finishTrial = True
                     running = False
                     #return      
     
@@ -180,21 +179,34 @@ def behavioral_test_1():
     # Done! Time to quit.
     return
 
+beamBroken = False
+beamTimer = 0
+mouseAtWell = False
+def sensorHandler():
+    global beamBroken
+    global beamTimer
+    print('IRbeam was broken')
+    logging.info('IRbeam was broken)
+    beamBroken=True
+    beamTimer = time.time()
+    # buzz.play()
+    # valve.drop()
+
 def behavioral_test_2():
     # Import and initialize the pygame library
     pygame.display.set_caption('Mouse Touchscreen Program')
+    logging.info('Behavioral Test 2 Started')
+
+    # Initialize Reward-Setup
+    global beamBroken
+    global beamTimer
+    global mouseAtWell
     buzz = Buzzer()
     valve = Valve()
-
-    def sensorHandler():
-        print('IRbeam was broken')
-        buzz.play()
-        valve.drop()
-
-
+    valve.setOpenTime(.5) # open time of valve, adjust as needed
     sensor = IRSensor(sensorHandler)
 
-    #Initialize logging 
+    # Initialize logging 
     logging.basicConfig(filename ='test.log', level= logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
     #format='%(asctime)s:%(levelname)s:%(message)s'
 
@@ -206,13 +218,13 @@ def behavioral_test_2():
     screen_width = 800 
     screen_height = 480
     screen = pygame.display.set_mode([screen_width, screen_height])
-    logging.info('Program Started')
 
     #make fullscreen on touchscreen
     if isRaspberryPI():
         screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
         pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
+    rewardGiven = False
     def check_collision(objectT, mouse_pos,color=(0,0,0)):
         if objectT.collidepoint(mouse_pos):
             '''
@@ -226,8 +238,10 @@ def behavioral_test_2():
             pygame.display.flip()
             pygame.mouse.set_pos(0,0)
             buzz.play()
+            logging.info('Sound played')
             pygame.time.wait(1000) #pauses program for 1000ms for flash
             valve.drop()
+            rewardGiven = True
             logging.info('Shape: {}'.format(objectT))
 
     print('Running in Raspberry PI = {}'.format(isRaspberryPI()))
@@ -249,7 +263,19 @@ def behavioral_test_2():
         closing_box = pygame.draw.rect(screen, black, (700,0, 100,100))
 
         mouse_pos = pygame.mouse.get_pos()
-	
+        if beamBroken == True:
+            valve.drop()
+            logging.info('Reward given')
+            rewardGiven = True
+            mouseAtWell = True
+    
+        if sensor.isPressed() == False:
+            mouseAtWell = False
+            beambroke  = False
+            timeAtWell = round((time.time() - beamTimer),4)
+            logging.info('Time spent at well: {}'.format(timeAtWell))
+
+
         eventsToCatch = [pygame.MOUSEBUTTONDOWN, pygame.FINGERUP]
         for event in pygame.event.get():
             #check for mousebutton 
@@ -261,7 +287,7 @@ def behavioral_test_2():
                 left_click, pressed2, right_click = pygame.mouse.get_pressed() #pressed 1 is left click, pressed 3 is right click 
                 if left_click or event.type==pygame.FINGERUP:
                     # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
-                    check_collision(obj1,mouse_pos)
+                    check_collision(obj1,mouse_pos, )
                     # for obj in objList:
                     #     check_collision(obj,mouse_pos,left_click,white)
 
@@ -278,22 +304,21 @@ def behavioral_test_2():
             
             # When mouse is clicked or screen touched, a timer starts
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-                timer = time.time()
+                startTimer = time.time()
             # When you unclick mouse or stop touching screen, timer stops
 
             # Records amount of  time you held mouse button or touched screen
             elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
-                timer = time.time() - timer
-                timer = str(timer)[:5]
-                timer = float(timer)
+                clickTime = round((time.time() - startTimer),4)
+                print(clickTime)
                 # Checks if screen was pressed in top right corner
                 curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
                 # Returns to menu if top right corner was pressed for more than 2 seconds
-                if curs_in_box and timer > 2:
+                if curs_in_box and clickTime > 2:
                     print('User has pressed top right corner for 2 seconds. Returning to menu.')
+                    logging.info('Returned to Menu')
                     running = False
                     #return      
-    
         # Fill the background with black
         screen.fill(black)
         # Draw circles
@@ -313,9 +338,134 @@ def behavioral_test_2():
     # Done! Time to quit.
     return
 
+def behavioral_test_3():
+    # Import and initialize the pygame library
+    pygame.display.set_caption('Mouse Touchscreen Program')
+    logging.info('Behavioral Test 3 started')
+
+    # Initialize Reward-Setup
+    global beamBroken
+    global beamTimer
+    global mouseAtWell
+    buzz = Buzzer()
+    valve = Valve()
+    valve.setOpenTime(.5) # open time of valve, adjust as needed
+    sensor = IRSensor(sensorHandler)
+
+    # Initialize logging 
+    logging.basicConfig(filename ='test.log', level= logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
+    #format='%(asctime)s:%(levelname)s:%(message)s'
+
+    # Import pygame.locals for easier access to key coordinates
+    from pygame.locals import (
+        K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
+    )
+    # Set up the display window. Touchscreen dimensions = 800x400
+    screen_width = 800 
+    screen_height = 480
+    screen = pygame.display.set_mode([screen_width, screen_height])
+    logging.info('Program Started')
+
+    #make fullscreen on touchscreen
+    if isRaspberryPI():
+        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+    print('Running in Raspberry PI = {}'.format(isRaspberryPI()))
+
+    running = True
+    off = False 
+    rewardGiven = False
+    finishTrial = False
+    sleepTime = 10
+    timeAtWell = 0
+    # Main loop, run until the user asks to quit
+    while running:
+        #turn on/off visibility of mouse cursor (True=visible, False=hidden)
+        #Turns visibility off if Raspberry pi is connected
+        #if isRaspberryPI():
+            #pygame.mouse.set_visible(off)
+        # Draws invisible box in top right corner to return to menu
+        closing_box = pygame.draw.rect(screen, black, (700,0, 100,100))
+
+        #Stops program for X seconds after a trial is completed 
+        if finishTrial == True:
+            #Turns screen gray to make sure it's working 
+            screen.fill(gray)
+            pygame.display.flip()
+            #Sleeps program for X seconds
+            time.sleep(sleepTime)
+            logging.info('Finished Trial. Waiting to start next trial')
+            finishTrial = False
+
+        #Delivers reward and plays sound every time beam is broken 
+        if beamBroken == True:
+            logging.info('Mouse has entered well')
+            buzz.play()
+            logging.info('Sound played')
+            valve.drop()
+            logging.info('Reward given')
+            mouseAtWell = True
+    
+        if (mouseAtWell == True) and (sensor.isPressed() == False):
+            logging.info('Mouse has left well')
+            mouseAtWell = False
+            finishTrial = True
+            beambroke  = False
+            timeAtWell = round((time.time() - beamTimer),4)
+            logging.info('Time spent at well: {}'.format(timeAtWell))
+
+
+        eventsToCatch = [pygame.MOUSEBUTTONDOWN, pygame.FINGERUP]
+        for event in pygame.event.get():
+            #check for mousebutton 
+            if event.type == pygame.MOUSEBUTTONDOWN or event.type==pygame.FINGERUP:
+                print(event.type)
+                mouse_pos= pygame.mouse.get_pos()
+                print('The position of the cursor is', mouse_pos)
+                logging.info('Coordinates:' + str(mouse_pos))
+
+            #Check for events 
+            if event.type == KEYDOWN: #escape from program
+                # Was it the Escape key? If so, stop the loop.
+                if event.key == K_ESCAPE:
+                    running = False
+                # Pressing 'x' key stops behavioral test and returns to menu
+                elif event.key == K_x:
+                    return 
+            elif event.type == pygame.QUIT:
+                    running = False
+            
+            # When mouse is clicked or screen touched, a timer starts
+            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
+                startTimer = time.time()
+            # When you unclick mouse or stop touching screen, timer stops
+
+            # Records amount of  time you held mouse button or touched screen
+            elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
+                clickTime = round((time.time() - startTimer),4)
+                print(clickTime)
+                # Checks if screen was pressed in top right corner
+                curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
+                # Returns to menu if top right corner was pressed for more than 2 seconds
+                if curs_in_box and clickTime > 2:
+                    print('User has pressed top right corner for 2 seconds. Returning to menu.')
+                    #finishTrial = True
+                    running = False
+                    #return      
+       
+       # Fill the background with black
+        screen.fill(black)
+        # Draw invisible closing box
+        pygame.draw.rect(screen, black, (700,0, 100,100))
+        # Update  the display
+        pygame.display.flip()
+
+    # Done! Time to quit.
+    return
+
 if __name__ == '__main__':
     pygame.init()
-    behavioral_test_1()
+    behavioral_test_3()
     #pygame.quit()
 
         #     print('You pressed the circle')
