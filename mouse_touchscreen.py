@@ -136,25 +136,14 @@ def behavioral_test_1():
             elif event.type == pygame.QUIT:
                     running = False
             
-            # When mouse is clicked or screen touched, a timer starts
+            # When mouse is clicked or screen touched, the current time is recorded
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-                startTimer = time.time()
-            # When you unclick mouse or stop touching screen, timer stops
+                # Checks if test should return to menu
+                running = return_to_menu(event)
+    
+                    
 
-            # Records amount of  time you held mouse button or touched screen
-            elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
-                clickTime = round((time.time() - startTimer),4)
-                print(clickTime)
-                # Checks if screen was pressed in top right corner
-                curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
-                # Returns to menu if top right corner was pressed for more than 2 seconds
-                if curs_in_box and clickTime > 2:
-                    print('User has pressed top right corner for 2 seconds. Returning to menu.')
-                    #finishTrial = True
-                    running = False
-                    #return      
-    
-    
+ 
         # Fill the background with black
         screen.fill(black)
         # Draw circles
@@ -186,7 +175,7 @@ def sensorHandler():
     global beamBroken
     global beamTimer
     print('IRbeam was broken')
-    logging.info('IRbeam was broken)
+    logging.info('IRbeam was broken')
     beamBroken=True
     beamTimer = time.time()
     # buzz.play()
@@ -302,23 +291,10 @@ def behavioral_test_2():
             elif event.type == pygame.QUIT:
                     running = False
             
-            # When mouse is clicked or screen touched, a timer starts
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-                startTimer = time.time()
-            # When you unclick mouse or stop touching screen, timer stops
-
-            # Records amount of  time you held mouse button or touched screen
-            elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
-                clickTime = round((time.time() - startTimer),4)
-                print(clickTime)
-                # Checks if screen was pressed in top right corner
-                curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
-                # Returns to menu if top right corner was pressed for more than 2 seconds
-                if curs_in_box and clickTime > 2:
-                    print('User has pressed top right corner for 2 seconds. Returning to menu.')
-                    logging.info('Returned to Menu')
-                    running = False
-                    #return      
+                # Checks if test should return to menu
+                running = return_to_menu(event)
+     
         # Fill the background with black
         screen.fill(black)
         # Draw circles
@@ -435,23 +411,11 @@ def behavioral_test_3():
             elif event.type == pygame.QUIT:
                     running = False
             
-            # When mouse is clicked or screen touched, a timer starts
+            # When mouse is clicked or screen touched, the current time is recorded
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-                startTimer = time.time()
-            # When you unclick mouse or stop touching screen, timer stops
-
-            # Records amount of  time you held mouse button or touched screen
-            elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
-                clickTime = round((time.time() - startTimer),4)
-                print(clickTime)
-                # Checks if screen was pressed in top right corner
-                curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
-                # Returns to menu if top right corner was pressed for more than 2 seconds
-                if curs_in_box and clickTime > 2:
-                    print('User has pressed top right corner for 2 seconds. Returning to menu.')
-                    #finishTrial = True
-                    running = False
-                    #return      
+                # Checks if test should return to menu
+                running = return_to_menu(event)
+    
        
        # Fill the background with black
         screen.fill(black)
@@ -462,6 +426,42 @@ def behavioral_test_3():
 
     # Done! Time to quit.
     return
+
+
+def return_to_menu(event):
+
+    running = True
+    startTime = time.time()
+    screen = pygame.display.set_mode([800, 480])
+    # Draws invisible box in top right corner to return to menu
+    closing_box = pygame.draw.rect(screen, black, (700,0, 100,100))
+    # Checks if screen was pressed in top right corner
+    curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
+    # Time elapsed since corner was pressed
+    elapsed = 0
+    # Checks time elapsed every second and closes program once 2 seconds have passed
+    while curs_in_box:
+        if elapsed > 2:
+            running = False
+            break
+        # If corner is no longer being pressed, the loop breaks
+        elif mouse_event_type() == False:
+            break
+        elapsed = time.time() - startTime
+        time.sleep(1)
+        print('Top right corner pressed. Number of seconds elapsed: ' + str(elapsed))
+    
+    return running
+
+# Checks that corner is still pressed while time is <2 sec
+def mouse_event_type():
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN or event.type == 32779 or event.type == pygame.FINGERDOWN:
+            return True
+        else:
+            return False
+        
+
 
 if __name__ == '__main__':
     pygame.init()
