@@ -138,7 +138,7 @@ def behavioral_test_1(screen):
             # When mouse is clicked or screen touched, the current time is recorded
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
                 # Checks if test should return to menu
-                running = return_to_menu(event)
+                running = return_to_menu(event,screen)
     
                     
 
@@ -293,7 +293,7 @@ def behavioral_test_2(screen):
             
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
                 # Checks if test should return to menu
-                running = return_to_menu(event)
+                running = return_to_menu(event,screen)
      
         # Fill the background with black
         screen.fill(black)
@@ -410,7 +410,7 @@ def behavioral_test_3(screen):
             # When mouse is clicked or screen touched, the current time is recorded
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
                 # Checks if test should return to menu
-                running = return_to_menu(event)
+                running = return_to_menu(event,screen)
     
        
        # Fill the background with black
@@ -424,11 +424,11 @@ def behavioral_test_3(screen):
     return
 
 
-def return_to_menu(event):
+def return_to_menu(event,screen):
 
     running = True
     startTime = time.time()
-    screen = pygame.display.set_mode([800, 480])
+    #screen = pygame.display.set_mode([800, 480])
     # Draws invisible box in top right corner to return to menu
     closing_box = pygame.draw.rect(screen, black, (700,0, 100,100))
     # Checks if screen was pressed in top right corner
