@@ -132,7 +132,7 @@ class IRSensor(object):
                 logger.info('error handled module sensor')
 
         def isPressed(self):
-            return self.sensor.isPressed()
+            return self.sensor.is_pressed
 
         def setHandler(self,handler):
             self.handler = handler

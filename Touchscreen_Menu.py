@@ -23,6 +23,7 @@ pygame.init()
     #make fullscreen on touchscreen
 if isRaspberryPI():
     surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+    pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 else:
     surface = pygame.display.set_mode((800,480))
 
@@ -32,15 +33,15 @@ menu = pygame_menu.Menu(480,800,'Mouse Touchscreen Menu',
                         onclose=pygame_menu.events.RESET,
                         touchscreen_enabled=True,
                         joystick_enabled=False,
-                        mouse_enabled =False if isRaspberryPI() else True)
+                        mouse_enabled = True if isRaspberryPI() else True)
 
 # Creates button for behavioral test 1
 # Uses Jason's behavioral test script
-menu.add_button('Behavioral Test 1', mouse_touchscreen.behavioral_test_1)
+menu.add_button('Behavioral Test 1', mouse_touchscreen.behavioral_test_1, surface)
 
-menu.add_button('Behavioral Test 2', mouse_touchscreen.behavioral_test_2)
+menu.add_button('Behavioral Test 2', mouse_touchscreen.behavioral_test_2, surface)
 
-menu.add_button('Behavioral Test 3', mouse_touchscreen.behavioral_test_3)
+menu.add_button('Behavioral Test 3', mouse_touchscreen.behavioral_test_3, surface)
 
 # Allows menu to be run
 menu.mainloop(surface)

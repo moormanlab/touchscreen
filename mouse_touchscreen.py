@@ -27,13 +27,13 @@ gray = (128,128,128)
 #Functions to add
 ''' 
 - Add shapes (one function for each shape most likely, i.e circle, square, polygon)
-- Check collison √
+- Check collison - Done
 - Update screen?
 -Play sound 
 '''
 
 # Puts entire script into function to call in menu script
-def behavioral_test_1():
+def behavioral_test_1(screen):
 
     # Import and initialize the pygame library
     pygame.display.set_caption('Mouse Touchscreen Program')
@@ -52,15 +52,14 @@ def behavioral_test_1():
         K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
     )
     # Set up the display window. Touchscreen dimensions = 800x400
-    screen_width = 800 
-    screen_height = 480
-    screen = pygame.display.set_mode([screen_width, screen_height])
+    #screen_width = 800 
+    #screen_height = 480
+    #screen = pygame.display.set_mode([screen_width, screen_height])
     logging.info('Program Started')
 
     #make fullscreen on touchscreen
-    if isRaspberryPI():
-        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
-        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+    #if isRaspberryPI():
+    #    screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
 
     def check_collision(objectT, mouse_pos, color=(0,0,0)):
         if objectT.collidepoint(mouse_pos):
@@ -186,13 +185,13 @@ def sensorHandler():
     global beamBroken
     global beamTimer
     print('IRbeam was broken')
-    logging.info('IRbeam was broken)
+    logging.info('IRbeam was broken')
     beamBroken=True
     beamTimer = time.time()
     # buzz.play()
     # valve.drop()
 
-def behavioral_test_2():
+def behavioral_test_2(screen):
     # Import and initialize the pygame library
     pygame.display.set_caption('Mouse Touchscreen Program')
     logging.info('Behavioral Test 2 Started')
@@ -203,7 +202,7 @@ def behavioral_test_2():
     global mouseAtWell
     buzz = Buzzer()
     valve = Valve()
-    valve.setOpenTime(.5) # open time of valve, adjust as needed
+    valve.setOpenTime(.05) # open time of valve, adjust as needed
     sensor = IRSensor(sensorHandler)
 
     # Initialize logging 
@@ -215,14 +214,14 @@ def behavioral_test_2():
         K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
     )
     # Set up the display window. Touchscreen dimensions = 800x400
-    screen_width = 800 
-    screen_height = 480
-    screen = pygame.display.set_mode([screen_width, screen_height])
-
-    #make fullscreen on touchscreen
-    if isRaspberryPI():
-        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
-        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+#    screen_width = 800 
+#    screen_height = 480
+#    screen = pygame.display.set_mode([screen_width, screen_height])
+#
+#    #make fullscreen on touchscreen
+#    if isRaspberryPI():
+#        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+#        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
     rewardGiven = False
     def check_collision(objectT, mouse_pos,color=(0,0,0)):
@@ -268,6 +267,7 @@ def behavioral_test_2():
             logging.info('Reward given')
             rewardGiven = True
             mouseAtWell = True
+            beamBroken = False
     
         if sensor.isPressed() == False:
             mouseAtWell = False
@@ -338,7 +338,7 @@ def behavioral_test_2():
     # Done! Time to quit.
     return
 
-def behavioral_test_3():
+def behavioral_test_3(screen):
     # Import and initialize the pygame library
     pygame.display.set_caption('Mouse Touchscreen Program')
     logging.info('Behavioral Test 3 started')
@@ -361,30 +361,25 @@ def behavioral_test_3():
         K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
     )
     # Set up the display window. Touchscreen dimensions = 800x400
-    screen_width = 800 
-    screen_height = 480
-    screen = pygame.display.set_mode([screen_width, screen_height])
+#    screen_width = 800 
+#    screen_height = 480
+#    screen = pygame.display.set_mode([screen_width, screen_height])
     logging.info('Program Started')
 
     #make fullscreen on touchscreen
-    if isRaspberryPI():
-        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
-        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+#    if isRaspberryPI():
+#        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+#        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
     print('Running in Raspberry PI = {}'.format(isRaspberryPI()))
 
     running = True
     off = False 
     rewardGiven = False
     finishTrial = False
-    sleepTime = 10
+    sleepTime = 3
     timeAtWell = 0
     # Main loop, run until the user asks to quit
     while running:
-        #turn on/off visibility of mouse cursor (True=visible, False=hidden)
-        #Turns visibility off if Raspberry pi is connected
-        #if isRaspberryPI():
-            #pygame.mouse.set_visible(off)
-        # Draws invisible box in top right corner to return to menu
         closing_box = pygame.draw.rect(screen, black, (700,0, 100,100))
 
         #Stops program for X seconds after a trial is completed 
@@ -405,12 +400,13 @@ def behavioral_test_3():
             valve.drop()
             logging.info('Reward given')
             mouseAtWell = True
+            beamBroken = False
     
         if (mouseAtWell == True) and (sensor.isPressed() == False):
             logging.info('Mouse has left well')
             mouseAtWell = False
             finishTrial = True
-            beambroke  = False
+            #beambroke  = False
             timeAtWell = round((time.time() - beamTimer),4)
             logging.info('Time spent at well: {}'.format(timeAtWell))
 
@@ -456,7 +452,7 @@ def behavioral_test_3():
        # Fill the background with black
         screen.fill(black)
         # Draw invisible closing box
-        pygame.draw.rect(screen, black, (700,0, 100,100))
+        #pygame.draw.rect(screen, black, (700,0, 100,100))
         # Update  the display
         pygame.display.flip()
 
@@ -466,32 +462,3 @@ def behavioral_test_3():
 if __name__ == '__main__':
     pygame.init()
     behavioral_test_3()
-    #pygame.quit()
-
-        #     print('You pressed the circle')
-        #     screen.fill(purple)
-        #     pygame.display.flip()
-        #     effect.play()
-        #     time.sleep(1)
-        #     pygame.mouse.set_pos(0,0)
-#         if rec1.collidepoint(mouse_pos) and left_click:
-#             print('You pressed the square')
-#             screen.fill(red)
-#             pygame.display.flip()
-#             pygame.mouse.set_pos(0,0)
-#             effect.play()
-#             time.sleep(.5)
-#         if circ2.collidepoint(mouse_pos) and left_click:
-#             print('You pressed the yellow circle')
-#             screen.fill(yellow)
-#             pygame.display.flip()
-#             pygame.mouse.set_pos(0,0)
-#             effect.play()
-#             time.sleep(.5)
-#         if rec2.collidepoint(mouse_pos) and left_click:
-#             print('You pressed the rectangle')
-#             screen.fill(blue)
-#             pygame.display.flip()
-#             pygame.mouse.set_pos(0,0)
-#             effect.play()
-#             time.sleep(.5)
