@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 import pygame
 import pygame_menu
-# Importing Jason's behavioral test script
-import mouse_touchscreen
 from hal import isRaspberryPI
 import logging
 
-
 # Initialize logging 
-logging.basicConfig(filename ='test.log', level= logging.INFO, format='%(asctime)s;%(levelname)s;%(message)s')
+logging.basicConfig(filename ='test.log', level= logging.INFO, filemode='w+', 
+        datefmt='%Y/%m/%d@@%H:%M:%S',
+        format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s')
+
+logging.getLogger('TouchMenu')
 
 #colors
 red = (255,0,0)
@@ -25,38 +26,28 @@ gray = (128,128,128)
 pygame.init()
 
 #Creates surface width=800, height=400
-    #make fullscreen on touchscreen
+#make fullscreen on touchscreen
 if isRaspberryPI():
     surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
     pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 else:
-    pygame.display.set_caption('Mouse Touchscreen Program')
     surface = pygame.display.set_mode((800,480))
 
 # Creates menu, adding title, and enabling touchscreen mode
-menu = pygame_menu.Menu(480,800,'Mouse Touchscreen Menu', 
+menu = pygame_menu.Menu('Mouse Touchscreen Menu',800,480, 
                         theme=pygame_menu.themes.THEME_GREEN, 
                         onclose=pygame_menu.events.RESET,
-                        touchscreen_enabled=True,
+                        touchscreen=True if isRaspberryPI() else False,
                         joystick_enabled=False,
-                        mouse_enabled = True)
-                        #mouse_enabled = False if isRaspberryPI() else True)
+                        mouse_enabled = False if isRaspberryPI() else True)
 
-# Creates button for behavioral test 1
-# Uses Jason's behavioral test script
-menu.add_button('Behavioral Test 1', mouse_touchscreen.behavioral_test_1, surface)
+# Importing Jason's behavioral test script
+import mouse_touchscreen
+menu.add.button('Classical Conditioning', mouse_touchscreen.classicalConditioning, surface)
 
-menu.add_button('Behavioral Test 2', mouse_touchscreen.behavioral_test_2, surface)
+menu.add.button('Operant Conditioning', mouse_touchscreen.operantConditioning, surface)
 
-menu.add_button('Behavioral Test 3', mouse_touchscreen.behavioral_test_3, surface)
+menu.add.button('Behavioral Test 1', mouse_touchscreen.behavioral_test_1, surface)
 
 # Allows menu to be run
 menu.mainloop(surface)
-
-
-# def behavioral_test_2():
-#     print('test 2 placeholder')
-
-# def behavioral_test_3():
-#     print('test 3 placeholder')
-

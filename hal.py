@@ -210,7 +210,7 @@ class Valve(object):
 
         def setOpenTime(self,openTime):
             self.openTime = openTime
-            logger.info('Valve openTime {:.4f}'.format(opentime))
+            logger.info('Valve openTime {:.4f}'.format(openTime))
 
         def open(self):
             logger.info('Valve open')

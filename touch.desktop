@@ -1,9 +1,9 @@
 [Desktop Entry]
 Encoding=UTF-8
 Type=Application
-Name=MiceTS
+Name=MiceTSMenu
 Icon=/home/pi/touchscreen/mouse.xpm
-Exec=/usr/bin/python3 /home/pi/touchscreen/mouse_touchscreen.py
+Exec=/home/pi/touchscreen/runTouchscreen.sh
 Comment[en_US]=Mouse Touchscreen Training
 StartupNotify=true
 Categories=Utility
