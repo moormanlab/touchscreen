@@ -4,6 +4,11 @@ import pygame_menu
 # Importing Jason's behavioral test script
 import mouse_touchscreen
 from hal import isRaspberryPI
+import logging
+
+
+# Initialize logging 
+logging.basicConfig(filename ='test.log', level= logging.INFO, format='%(asctime)s;%(levelname)s;%(message)s')
 
 #colors
 red = (255,0,0)
@@ -25,6 +30,7 @@ if isRaspberryPI():
     surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
     pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 else:
+    pygame.display.set_caption('Mouse Touchscreen Program')
     surface = pygame.display.set_mode((800,480))
 
 # Creates menu, adding title, and enabling touchscreen mode

@@ -34,32 +34,20 @@ gray = (128,128,128)
 
 # Puts entire script into function to call in menu script
 def behavioral_test_1(screen):
+    logging.getLogger('BehTest1')
 
-    # Import and initialize the pygame library
-    pygame.display.set_caption('Mouse Touchscreen Program')
     buzz = Buzzer()
     def sensorHandler():
         print('Decide what to do when the IRbeam was broken')
 
     sensor = IRSensor(sensorHandler)
     valve = Valve()
-    #Initialize logging 
-    logging.basicConfig(filename ='test.log', level= logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
-    #format='%(asctime)s:%(levelname)s:%(message)s'
 
     # Import pygame.locals for easier access to key coordinates
     from pygame.locals import (
         K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
     )
-    # Set up the display window. Touchscreen dimensions = 800x400
-    #screen_width = 800 
-    #screen_height = 480
-    #screen = pygame.display.set_mode([screen_width, screen_height])
     logging.info('Program Started')
-
-    #make fullscreen on touchscreen
-    #if isRaspberryPI():
-    #    screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
 
     def check_collision(objectT, mouse_pos, color=(0,0,0)):
         if objectT.collidepoint(mouse_pos):
@@ -101,7 +89,7 @@ def behavioral_test_1(screen):
         closing_box = pygame.draw.rect(screen, black, (700,0, 100,100))
 
         mouse_pos = pygame.mouse.get_pos()
-	
+
         eventsToCatch = [pygame.MOUSEBUTTONDOWN, pygame.FINGERUP]
         for event in pygame.event.get():
             #check for mousebutton 
@@ -181,8 +169,7 @@ def sensorHandler():
     # valve.drop()
 
 def behavioral_test_2(screen):
-    # Import and initialize the pygame library
-    pygame.display.set_caption('Mouse Touchscreen Program')
+    logging.getLogger('BehTest2')
     logging.info('Behavioral Test 2 Started')
 
     # Initialize Reward-Setup
@@ -194,23 +181,11 @@ def behavioral_test_2(screen):
     valve.setOpenTime(.05) # open time of valve, adjust as needed
     sensor = IRSensor(sensorHandler)
 
-    # Initialize logging 
-    logging.basicConfig(filename ='test.log', level= logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
-    #format='%(asctime)s:%(levelname)s:%(message)s'
 
     # Import pygame.locals for easier access to key coordinates
     from pygame.locals import (
         K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
     )
-    # Set up the display window. Touchscreen dimensions = 800x400
-#    screen_width = 800 
-#    screen_height = 480
-#    screen = pygame.display.set_mode([screen_width, screen_height])
-#
-#    #make fullscreen on touchscreen
-#    if isRaspberryPI():
-#        screen = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
-#        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
 
     rewardGiven = False
     def check_collision(objectT, mouse_pos,color=(0,0,0)):
@@ -232,17 +207,13 @@ def behavioral_test_2(screen):
             rewardGiven = True
             logging.info('Shape: {}'.format(objectT))
 
-    print('Running in Raspberry PI = {}'.format(isRaspberryPI()))
+    logging.info('Running in Raspberry PI = {}'.format(isRaspberryPI()))
 
     running = True
     off = False 
 
     # Main loop, run until the user asks to quit
     while running:
-        #turn on/off visibility of mouse cursor (True=visible, False=hidden)
-        #Turns visibility off if Raspberry pi is connected
-        #if isRaspberryPI():
-            #pygame.mouse.set_visible(off)
         
         #draw shape in middle of screen
         obj1= pygame.draw.circle(screen, yellow, (400,240), 100)

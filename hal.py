@@ -43,40 +43,42 @@ def isRaspberryPI():
 class Buzzer():
     class _dummyBuzzer:
         def __init__(self):
-            self._arch = PC
             pass
     
         def play(self,frec=440.,duration=1.0):
+            logger.info('Dummy tone d={:4.4f}'.format(duration))
             time.sleep(duration)
 
         def playTune(self,tune):
+            logger.info('Dummy playing custom tune')
             self.bz.play(1.0)
 
     class _piBuzzer:
         def __init__(self):
             from gpiozero import TonalBuzzer
-            self._arch = RASPBERRY_PI
             self.bz= TonalBuzzer(buzzerPIN)
 
         def play(self,frec=440.0,duration=1.0):
             from gpiozero.tones import Tone
+            logger.info('Buzzer Tone f={:4.3f}, d={:4.4f}'.format(frec,duration))
             self.bz.play(Tone(float(frec)))
             time.sleep(float(duration))
             self.bz.stop()
 
         def playTune(self,tune):
-            from gpiozero.tones import Tone
+            logger.info('Buzzer playing custom tune')
             for note, duration in tune:
                 self.bz.play(note)
                 time.sleep(float(duration))
             self.bz.stop()
 
     __instance = None
-
+    __arch = None
+    
     def __init__(self):
         if Buzzer.__instance is None:
-
-            if _getArch() == RASPBERRY_PI:
+            Buzzer.__arch = _getArch()
+            if Buzzer.__arch == RASPBERRY_PI:
                 Buzzer.__instance=Buzzer._piBuzzer()
             else:
                 Buzzer.__instance=Buzzer._dummyBuzzer()
@@ -117,11 +119,11 @@ class IRSensor(object):
         def __init__(self,handler=None):
             from gpiozero import Button
             self.handler = handler
-            self.arch = RASPBERRY_PI
             self.sensor = Button(irPIN)
             self.sensor.when_pressed = self._sensorHandler
 
         def _sensorHandler(self):
+            logger.info('ir sensor activated')
             try:
                 if self.handler is not None:
                     self.handler()
@@ -151,14 +153,14 @@ class IRSensor(object):
             else:
                 IRSensor.__instance=IRSensor._dummySensor(handler)
 
-    def _sensorHandler(self):
-        try:
-            logger.info('generic handler')
-            if self.handler is not None:
-                self.handler()
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            logger.info('error handled module sensor')
+#    def _sensorHandler(self):
+#        try:
+#            logger.info('generic handler')
+#            if self.handler is not None:
+#                self.handler()
+#        except Exception as e:
+#            logger.error(traceback.format_exc())
+#            logger.info('error handled module sensor')
 
     def __getattr__(self, attr):
         """ Delegate access to implementation """
@@ -208,17 +210,18 @@ class Valve(object):
 
         def setOpenTime(self,openTime):
             self.openTime = openTime
+            logger.info('Valve openTime {:.4f}'.format(opentime))
 
         def open(self):
-            logger.info('valve on')
+            logger.info('Valve open')
             self.valve.on()
 
         def close(self):
-            logger.info('valve off')
+            logger.info('Valve closed')
             self.valve.off()
 
         def drop(self):
-            logger.info('valve drop')
+            logger.info('Valve drop')
             self.valve.blink(on_time=self.openTime,n=1)
 
     __instance = None

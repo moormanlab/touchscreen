@@ -1,7 +1,10 @@
 # Byte-compiled
 __pycache__/
-*.py[cod]
+*.py[codk]
 
 # Temporal Files
 *.swp
 *.log
+
+# CAD Files
+*.stl

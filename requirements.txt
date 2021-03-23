@@ -1,0 +1,4 @@
+python>=3.7
+pygame>=2.0
+pygame-menu
+gpiozero
