@@ -41,6 +41,12 @@ menu = pygame_menu.Menu('Mouse Touchscreen Menu',800,480,
                         joystick_enabled=False,
                         mouse_enabled = False if isRaspberryPI() else True)
 
+import showip
+def updateIP(Label,menu):
+    Label.set_title('Ip : ' + showip.getip())
+
+IPLabel = menu.add.label('Ip : ' + showip.getip())
+IPLabel.add_draw_callback(updateIP)
 # Importing Jason's behavioral test script
 import mouse_touchscreen
 menu.add.button('Classical Conditioning', mouse_touchscreen.classicalConditioning, surface)

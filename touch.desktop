@@ -5,5 +5,4 @@ Name=MiceTSMenu
 Icon=/home/pi/touchscreen/mouse.xpm
 Exec=/home/pi/touchscreen/runTouchscreen.sh
 Comment[en_US]=Mouse Touchscreen Training
-StartupNotify=true
 Categories=Utility
