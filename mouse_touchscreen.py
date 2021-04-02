@@ -60,7 +60,6 @@ def behavioral_test_1(screen):
             logging.info('Shape: {}'.format(objectT))
             screen.fill(color)
             pygame.display.flip()
-            pygame.mouse.set_pos(0,0)
             return True
 
         return False
@@ -112,6 +111,7 @@ def behavioral_test_1(screen):
             running = return_to_menu(event,screen)
 
     # Done! Time to quit.
+    logger.info('Training Ended')
     return
 
 beamBroken = False
@@ -159,6 +159,7 @@ def operantConditioning(screen):
     running = True
     rewardGiven = False
     mouseAtWell = False
+    rewardCount = 0
 
     # Main loop, run until the user asks to quit
     while running:
@@ -205,6 +206,8 @@ def operantConditioning(screen):
                         logger.info('Sound played')
                         pygame.time.wait(1000) #pauses program for 1000ms for flash
                         valve.drop()
+                        rewardCount = rewardCount + 1
+                        logger.info('Reward given. Total = {:d}'.format(rewardCount))
                         rewardGiven = True
 
             #Check for events 
@@ -217,6 +220,7 @@ def operantConditioning(screen):
             
             running = return_to_menu(event,screen)
      
+    logger.info('Training Ended')
     # Done! Time to quit.
     return
 
@@ -245,6 +249,7 @@ def classicalConditioning(screen):
     sleepTime = 3
     timeAtWell = 0
     mouseAtWell = False
+    rewardCount = 0
     # Main loop, run until the user asks to quit
     while running:
 
@@ -266,7 +271,8 @@ def classicalConditioning(screen):
             buzz.play()
             logger.info('Sound played')
             valve.drop()
-            logger.info('Reward given')
+            rewardCount = rewardCount + 1
+            logger.info('Reward given. Total = {:d}'.format(rewardCount))
     
         if (mouseAtWell == True) and (sensor.isPressed() == False):
             logger.info('Mouse has left well')
@@ -298,6 +304,7 @@ def classicalConditioning(screen):
         screen.fill(black)
         pygame.display.flip()
 
+    logger.info('Training Ended')
     # Done! Time to quit.
     return
 
@@ -341,4 +348,4 @@ if __name__ == '__main__':
         pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
     else:
         surface = pygame.display.set_mode((800,480))
-    behavioral_test_3(surface)
+    behavioral_test_1(surface)
