@@ -69,10 +69,6 @@ class Buzzer():
             tau = 2*math.pi
             lT = int(duration*self.Fs)
             bufferSnd = array.array('h',[int(amp*math.sin(t*tau*frec/self.Fs)) for t in range(lT)])
-            import matplotlib.pyplot as plt
-            import numpy as np
-            #plt.plot(np.linspace(0,duration,lT),bufferSnd)
-            #plt.show()
             Tone=pygame.mixer.Sound(array=bufferSnd)
             Tone.play()
             logger.info('Dummy tone f={:4.4} Hz d={:4.4f}'.format(frec,duration))
