@@ -43,15 +43,41 @@ def isRaspberryPI():
 class Buzzer():
     class _dummyBuzzer:
         def __init__(self):
-            pass
+            import pygame
+            pygame.mixer.quit()
+            pygame.mixer.init(44100, -16, 1)
+            self.Fs = pygame.mixer.get_init()[0]
+            self.amplitude = 2 ** (abs(pygame.mixer.get_init()[1]) - 1) - 1
+
     
         def play(self,frec=440.,duration=1.0):
-            logger.info('Dummy tone d={:4.4f}'.format(duration))
+            import pygame
+            import math
+            import array
+            
+            amp = self.amplitude
+            if type(frec) == str:
+                from gpiozero.tones import Tone
+                f=Tone(frec)
+                frec = float(f.real)
+            elif type(frec) == int:
+                frec = float(frec)
+            elif frec == None:
+                amp = 0
+                frec= 440.0
+
+            tau = 2*math.pi
+            lT = int(duration*self.Fs)
+            bufferSnd = array.array('h',[int(amp*math.sin(t*tau*frec/self.Fs)) for t in range(lT)])
+            import matplotlib.pyplot as plt
+            import numpy as np
+            #plt.plot(np.linspace(0,duration,lT),bufferSnd)
+            #plt.show()
+            Tone=pygame.mixer.Sound(array=bufferSnd)
+            Tone.play()
+            logger.info('Dummy tone f={:4.4} Hz d={:4.4f}'.format(frec,duration))
             time.sleep(duration)
 
-        def playTune(self,tune):
-            logger.info('Dummy playing custom tune')
-            self.bz.play(1.0)
 
     class _piBuzzer:
         def __init__(self):
@@ -61,15 +87,11 @@ class Buzzer():
         def play(self,frec=440.0,duration=1.0):
             from gpiozero.tones import Tone
             logger.info('Buzzer Tone f={:4.3f}, d={:4.4f}'.format(frec,duration))
-            self.bz.play(Tone(float(frec)))
+            if type(frec) == float or type(frec)==int:
+                self.bz.play(Tone(float(frec)))
+            elif type(frec) == str:
+                self.bz.play(Tone(frec))
             time.sleep(float(duration))
-            self.bz.stop()
-
-        def playTune(self,tune):
-            logger.info('Buzzer playing custom tune')
-            for note, duration in tune:
-                self.bz.play(note)
-                time.sleep(float(duration))
             self.bz.stop()
 
     __instance = None
@@ -95,25 +117,59 @@ class Buzzer():
         return self.__instance.play(frec,duration)
 
     def playTune(self,tune):
-        return self.__instance.playTune(tune)
+        logger.info('Buzzer playing custom tune')
+        for note, duration in tune:
+            self.__instance.play(note,duration)
 
 ###########################
 ## IRSensor
 ###########################
 class IRSensor(object):
     class _dummySensor(object):
+
         def __init__(self,handler=None):
-            self.time = int(time.time())
-        
+            self.handler = handler
+            self.time = 0
+            self.pressed = False
+
+            import threading
+            self.thread = threading.Thread(target=self._dummyThread,daemon=True)
+            self.thread.start()
+            
+        def _dummyThread(self):
+            import pygame
+            from pygame.locals import K_i
+            dummyrun = True
+            while dummyrun:
+              time.sleep(.01)
+              keys = pygame.key.get_pressed()
+              if keys[K_i]:
+                if not self.pressed:
+                  self._sensorHandler()
+                  self.pressed = True
+                time.sleep(.01)
+              else:
+                if self.pressed:
+                  self.pressed = False
+
+        def _sensorHandler(self):
+            logger.info('ir sensor activated')
+            try:
+                if self.handler is not None:
+                    self.handler()
+                else:
+                    logger.info('generic handler')
+            except Exception as e:
+                logger.info('error handled module sensor')
+
         def isPressed(self):
-            diff = int(time.time()) - self.time
-            return (diff%2==0)
+            return self.pressed
 
         def setHandler(self,handler):
-            pass
+            self.handler = handler
 
         def releaseHandler(self):
-            pass
+            self.handler = None
 
     class _piSensor:
         def __init__(self,handler=None):
@@ -130,7 +186,6 @@ class IRSensor(object):
                 else:
                     logger.info('generic handler')
             except Exception as e:
-                logger.error(traceback.format_exc())
                 logger.info('error handled module sensor')
 
         def isPressed(self):
@@ -153,15 +208,6 @@ class IRSensor(object):
             else:
                 IRSensor.__instance=IRSensor._dummySensor(handler)
 
-#    def _sensorHandler(self):
-#        try:
-#            logger.info('generic handler')
-#            if self.handler is not None:
-#                self.handler()
-#        except Exception as e:
-#            logger.error(traceback.format_exc())
-#            logger.info('error handled module sensor')
-
     def __getattr__(self, attr):
         """ Delegate access to implementation """
         return getattr(self.__instance, attr)
@@ -174,11 +220,10 @@ class IRSensor(object):
         return self.__instance.isPressed()
 
     def setHandler(self,handler):
-        return self.__instance.setHandler(handler)
+        self.__instance.setHandler(handler)
 
     def releaseHandler(self):
-        return self.__instance.releaseHandler(handler)
-
+        self.__instance.releaseHandler()
 
 ###########################
 ## Valve
@@ -188,10 +233,10 @@ class Valve(object):
         def __init__(self):
             pass
 
-        def off(self):
+        def close(self):
             pass
         
-        def on(self):
+        def open(self):
             pass
 
         def drop(self):
@@ -199,6 +244,7 @@ class Valve(object):
             pass
 
         def setOpenTime(self, openTime):
+            logger.info('valve drop computer')
             pass
 
 
@@ -210,7 +256,6 @@ class Valve(object):
 
         def setOpenTime(self,openTime):
             self.openTime = openTime
-            logger.info('Valve openTime {:.4f}'.format(openTime))
 
         def open(self):
             logger.info('Valve open')
@@ -244,6 +289,7 @@ class Valve(object):
         return setattr(self.__instance, attr, value)
 
     def setOpenTime(self,openTime):
+        logger.info('Valve openTime {:.4f}'.format(openTime))
         return self.__instance.setOpenTime(openTime)
 
     def open(self):
@@ -256,22 +302,42 @@ class Valve(object):
         return self.__instance.drop()
 
 if __name__=='__main__':
-#    val = Valve()
-#    val.open()
-#    time.sleep(.5)
-#    val.close()
+    val = Valve()
+    val.open()
+    time.sleep(.5)
+    val.close()
+    val.setOpenTime(.2)
+    val.drop()
+
     buzz = Buzzer()
     buzz.play(440,0.5)
-#
-#    tune = [('C#4', 0.2), ('D4', 0.2), (None, 0.2),
-#            ('Eb4', 0.2), ('E4', 0.2), (None, 0.6),
-#            ('F#4', 0.2), ('G4', 0.2), (None, 0.6),
-#            ('Eb4', 0.2), ('E4', 0.2), (None, 0.2),
-#            ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
-#            ('C4', 0.2), ('B4', 0.2), (None, 0.2),
-#            ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
-#            ('B4', 0.2), ('Bb4', 0.5), (None, 0.6),
-#            ('A4', 0.2), ('G4', 0.2), ('E4', 0.2), 
-#            ('D4', 0.2), ('E4', 0.2)]
-#
-#    buzz.playTune(tune)
+
+    tune = [('C#4', 0.2), ('D4', 0.2), (None, 0.2),
+            ('Eb4', 0.2), ('E4', 0.2), (None, 0.6),
+            ('F#4', 0.2), ('G4', 0.2), (None, 0.6),
+            ('Eb4', 0.2), ('E4', 0.2), (None, 0.2),
+            ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
+            ('C4', 0.2), ('B4', 0.2), (None, 0.2),
+            ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
+            ('B4', 0.2), ('Bb4', 0.5), (None, 0.6),
+            ('A4', 0.2), ('G4', 0.2), ('E4', 0.2), 
+            ('D4', 0.2), ('E4', 0.2)]
+
+    buzz.playTune(tune)
+
+    import pygame
+    pygame.init()
+    screen = pygame.display.set_mode((300,300))
+    time.sleep(1)
+    def testHandler():
+        print('IR handler')
+        logger.info('testing handler')
+    irbeam = IRSensor()
+    irbeam.setHandler(testHandler)
+
+    running = True
+    while running:
+      for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+          running = False
+    pygame.quit()
