@@ -82,11 +82,16 @@ class Buzzer():
 
         def play(self,frec=440.0,duration=1.0):
             from gpiozero.tones import Tone
-            logger.info('Buzzer Tone f={:4.3f}, d={:4.4f}'.format(frec,duration))
             if type(frec) == float or type(frec)==int:
-                self.bz.play(Tone(float(frec)))
+                t = Tone(float(frec))
             elif type(frec) == str:
-                self.bz.play(Tone(frec))
+                t = Tone(frec)
+                frec = t.real
+            else:
+                t = frec
+                frec = 0.
+            logger.info('Buzzer Tone f={:4.3f}, d={:4.4f}'.format(frec,duration))
+            self.bz.play(t)
             time.sleep(float(duration))
             self.bz.stop()
 
