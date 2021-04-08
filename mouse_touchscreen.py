@@ -109,7 +109,7 @@ def behavioral_test_1(screen):
             elif event.type == pygame.QUIT:
                     return
             
-            running = return_to_menu(event,screen)
+            running = not return_to_menu(event,screen)
 
     # Done! Time to quit.
     logger.info('Training Ended')
@@ -168,7 +168,7 @@ def operantConditioning(screen):
         # Fill the background with black
         screen.fill(black)
         # Draw circles
-        obj1=pygame.draw.circle(screen, yellow, (400,340), 100)
+        obj1=pygame.draw.rect(screen, black, (0,0, 800,480))
 
         # Update  the display
         pygame.display.flip()
@@ -191,25 +191,27 @@ def operantConditioning(screen):
                 logger.info('Time spent at well: {:.2f}'.format(timeAtWell))
                 mouseAtWell = False
 
+        sleepTime = 3
 
         eventsToCatch = [pygame.MOUSEBUTTONDOWN, pygame.FINGERUP]
         for event in pygame.event.get():
-            #check for mousebutton 
-            if event.type == pygame.MOUSEBUTTONDOWN or event.type==pygame.FINGERUP:
+            if event.type in eventsToCatch:#== pygame.MOUSEBUTTONDOWN or event.type==pygame.FINGERDOWN:
                 logger.debug('Event {}'.format(event.type))
                 mouse_pos= pygame.mouse.get_pos()
                 logger.info('Coordinates:' + str(mouse_pos))
                 left_click, pressed2, right_click = pygame.mouse.get_pressed() #pressed 1 is left click, pressed 3 is right click 
-                if left_click or event.type==pygame.FINGERUP:
+                if left_click or event.type==pygame.FINGERDOWN:
                     # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
                     if check_collision(obj1,mouse_pos):
                         buzz.play()
                         logger.info('Sound played')
-                        pygame.time.wait(1000) #pauses program for 1000ms for flash
+                        screen.fill(gray)
+                        pygame.display.flip()
                         valve.drop()
                         rewardCount = rewardCount + 1
                         logger.info('Reward given. Total = {:d}'.format(rewardCount))
                         rewardGiven = True
+                        time.sleep(sleepTime)
 
             #Check for events 
             if event.type == KEYDOWN: #escape from program
@@ -219,7 +221,7 @@ def operantConditioning(screen):
             elif event.type == pygame.QUIT:
                     return
             
-            running = return_to_menu(event,screen)
+            running = not return_to_menu(event,screen)
      
     logger.info('Training Ended')
     # Done! Time to quit.
@@ -283,10 +285,10 @@ def classicalConditioning(screen):
             logging.info('Time spent at well: {:.2f}'.format(timeAtWell))
 
 
-        eventsToCatch = [pygame.MOUSEBUTTONDOWN, pygame.FINGERUP]
+        eventsToCatch = [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]
         for event in pygame.event.get():
             #check for mousebutton 
-            if event.type == pygame.MOUSEBUTTONDOWN or event.type==pygame.FINGERUP:
+            if event.type in eventsToCatch:
                 logger.debug('Event {}'.format(event.type))
                 mouse_pos= pygame.mouse.get_pos()
                 logger.info('Coordinates:' + str(mouse_pos))
@@ -300,7 +302,7 @@ def classicalConditioning(screen):
                     return
             
             # When mouse is clicked or screen touched, the current time is recorded
-            running = return_to_menu(event,screen)
+            running = not return_to_menu(event,screen)
     
         screen.fill(black)
         pygame.display.flip()

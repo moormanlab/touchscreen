@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 import pygame, pygame_menu
-from hal import isRaspberryPI
+from hal import isRaspberryPI, Valve
 import logging
-# Importing Jason's behavioral test script
-import mouse_touchscreen
 import showip
 import os
 from importlib import import_module
@@ -32,9 +30,9 @@ def import_tests(test_file):
     functions = inspect.getmembers(module, inspect.isfunction)
     return functions
 
-def function_menu(test_file):
+def function_menu(test_file,surface):
     # New function menu
-    menu, surface = initialize_menu()
+    menu = initialize_menu(test_file)
 
     exclude_functions = ['return_to_menu', 'isRaspberryPI', 'sensorHandler']
 
@@ -54,26 +52,45 @@ def function_menu(test_file):
         else:
             menu.add.button(function_name, function_call, surface)
 
-    # Allows menu to be run
-    menu.mainloop(surface)
+    return menu
         
+def settings_menu():
 
-def file_menu():
+    sMenu = initialize_menu('Settings')
+
+    IPLabel = sMenu.add.label('Ip : ' + showip.getip())
+    IPLabel.add_draw_callback(updateIP)
+
+    vMenu = initialize_menu('Valve')
+    sMenu.add.button(vMenu.get_title(),vMenu)
+    val = Valve()
+    vMenu.add.button('Open Valve', val.open)
+    vMenu.add.button('Close Valve', val.close)
+    vMenu.add.button('Drop Valve', val.drop)
+
+    return sMenu
+
+
+def file_menu(surface):
     # Retrieves test files
     test_files = scan_directory()
     # Creates new sub menu
-    menu, surface = initialize_menu()
+    menu = initialize_menu('Programs')
     
     for files in test_files:
-        menu.add.button(files, function_menu, files)
+        fmenu = function_menu(files,surface)
+        menu.add.button(files, fmenu)
 
-    # Allows menu to be run
     menu.mainloop(surface)
 
 
 def initialize_logging():
     # Initialize logging 
-    logging.basicConfig(filename ='test.log', level= logging.INFO, filemode='w+', 
+    import datetime
+    now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+    os.makedirs('logs',exist_ok=True)
+    logfile = 'logs/' + now + '.log'
+    logging.basicConfig(filename =logfile, level= logging.INFO, filemode='w+',
                         datefmt='%Y/%m/%d@@%H:%M:%S',
                         format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s')
 
@@ -81,50 +98,46 @@ def initialize_logging():
 
 
 def create_surface():
-    # Creates surface width=800, height=400
+    # Creates surface width=800, height=480
     # make fullscreen on touchscreen
-    surface = pygame.display.set_mode((800,480))
-
     if isRaspberryPI():
         surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
         pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+    else:
+        surface = pygame.display.set_mode((800,480))
     
     return surface
 
 
 def initial_buttons(menu, surface):
-    #menu.add.button('Classical Conditioning', mouse_touchscreen.classicalConditioning, surface)
-    #menu.add.button('Operant Conditioning', mouse_touchscreen.operantConditioning, surface)
-    #menu.add.button('Behavioral Test 1', mouse_touchscreen.behavioral_test_1, surface)
-    menu.add.button('Programs', file_menu)
-    return menu
+    hMenu = settings_menu()
+    menu.add.button(hMenu.get_title(), hMenu)
+    menu.add.button('Programs', file_menu,surface)
 
 
-def initialize_menu():
-    # Initializes pygame and logging
-    pygame.init()
-    initialize_logging()
-    
-    # Creates surface based on machine
-    surface = create_surface()
-
+def initialize_menu(title):
     # Creates menu, adding title, and enabling touchscreen mode
-    menu = pygame_menu.Menu('Mouse Touchscreen Menu', 800,480,
+    menu = pygame_menu.Menu(title, 800,480,
                             theme=pygame_menu.themes.THEME_GREEN, 
                             onclose=pygame_menu.events.RESET,
                             touchscreen=True if isRaspberryPI() else False,
                             joystick_enabled=False,
                             mouse_enabled = False if isRaspberryPI() else True)
 
-    return (menu, surface)
+    return menu
 
 
 def main():
+    # Initializes pygame and logging
+    pygame.init()
+    
     # Start menu
-    menu, surface = initialize_menu()
-    # Adds IP labels
-    IPLabel = menu.add.label('Ip : ' + showip.getip())
-    IPLabel.add_draw_callback(updateIP)
+    initialize_logging()
+    # Creates surface based on machine
+    surface = create_surface()
+
+    menu = initialize_menu('Mouse Touchscreen Menu')
+
     # Creates initial buttons
     initial_buttons(menu, surface)
 
