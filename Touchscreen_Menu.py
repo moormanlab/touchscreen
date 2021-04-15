@@ -67,7 +67,6 @@ def shutdown_pi(confirm_menu):
         confirm_menu.add.label(msg)
 
 
-
 def settings_menu():
 
     sMenu = initialize_menu('Settings')
@@ -91,7 +90,19 @@ def settings_menu():
     return sMenu
 
 
-def file_menu(surface):
+def create_surface():
+    # Creates surface width=800, height=480
+    # make fullscreen on touchscreen
+    if isRaspberryPI():
+        surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+    else:
+        surface = pygame.display.set_mode((800,480))
+    
+    return surface
+
+
+def file_menu(surface=create_surface()):
     # Retrieves test files
     test_files = scan_directory()
     # Creates new sub menu
@@ -102,6 +113,10 @@ def file_menu(surface):
         pMenu.add.button(files, fmenu)
 
     return pMenu
+
+def subject_logging(input):
+    logger = logging.getLogger('SubjectID')
+    logger.info('ID: ' + input)
 
 
 def initialize_logging():
@@ -117,24 +132,14 @@ def initialize_logging():
     logging.getLogger('TouchMenu')
 
 
-def create_surface():
-    # Creates surface width=800, height=480
-    # make fullscreen on touchscreen
-    if isRaspberryPI():
-        surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
-        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
-    else:
-        surface = pygame.display.set_mode((800,480))
-    
-    return surface
-
-
 def initial_buttons(menu, surface):
     hMenu = settings_menu()
     fMenu = file_menu(surface)
-
+    
+    menu.add.text_input('Subject ID: ', onreturn=subject_logging)
+    menu.add.vertical_margin(40)
     menu.add.button(hMenu.get_title(), hMenu)
-    menu.add.button(fMenu.get_title(), fMenu, surface)
+    menu.add.button(fMenu.get_title(), fMenu)
 
 
 def initialize_menu(title, main_menu=False):
@@ -156,9 +161,8 @@ def initialize_menu(title, main_menu=False):
 def main():
     # Initializes pygame and logging
     pygame.init()
-    
-    # Start menu
     initialize_logging()
+    
     # Creates surface based on machine
     surface = create_surface()
 
