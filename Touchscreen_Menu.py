@@ -66,26 +66,32 @@ def shutdown_pi(confirm_menu):
         msg = "Device is not a Raspberry Pi. Cannot shut down."
         confirm_menu.add.label(msg)
 
+def back_button(menu):
+    menu.add.vertical_margin(30)
+    menu.add.button('Back', pygame_menu.events.BACK)
 
 def settings_menu():
 
     sMenu = initialize_menu('Settings')
-
+    
     IPLabel = sMenu.add.label('Ip : ' + showip.getip())
     IPLabel.add_draw_callback(updateIP)
 
     vMenu = initialize_menu('Valve')
+
     confirm_menu = initialize_menu('')
+    shutdown_pi(confirm_menu)
+    back_button(confirm_menu)
 
     sMenu.add.button(vMenu.get_title(),vMenu)
     sMenu.add.button('Shutdown device', confirm_menu)
-
-    shutdown_pi(confirm_menu)
+    back_button(sMenu)
 
     val = Valve()
     vMenu.add.button('Open Valve', val.open)
     vMenu.add.button('Close Valve', val.close)
     vMenu.add.button('Drop Valve', val.drop)
+    back_button(vMenu)
 
     return sMenu
 
@@ -109,8 +115,12 @@ def file_menu(surface=create_surface()):
     pMenu = initialize_menu('Programs')
     
     for files in test_files:
-        fmenu = function_menu(files,surface)
-        pMenu.add.button(files, fmenu)
+        func_menu = function_menu(files,surface)
+        pMenu.add.button(files, func_menu)
+        back_button(func_menu)
+    
+
+    back_button(pMenu)
 
     return pMenu
 
@@ -142,7 +152,7 @@ def initial_buttons(menu, surface):
     menu.add.button(fMenu.get_title(), fMenu)
 
 
-def initialize_menu(title, main_menu=False):
+def initialize_menu(title):
     # Creates menu, adding title, and enabling touchscreen mode
     menu = pygame_menu.Menu(title, 800,480,
                             theme=pygame_menu.themes.THEME_GREEN, 
@@ -151,9 +161,9 @@ def initialize_menu(title, main_menu=False):
                             joystick_enabled=False,
                             mouse_enabled = False if isRaspberryPI() else True)
     
-    if main_menu is False:
-        menu.add.button('Back', pygame_menu.events.BACK)
-        menu.add.vertical_margin(40)
+    #if main_menu is False:
+        
+        
 
     return menu
 
@@ -166,7 +176,7 @@ def main():
     # Creates surface based on machine
     surface = create_surface()
 
-    menu = initialize_menu('Mouse Touchscreen Menu', main_menu=True)
+    menu = initialize_menu('Mouse Touchscreen Menu')
 
     # Creates initial buttons
     initial_buttons(menu, surface)
