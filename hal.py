@@ -162,6 +162,7 @@ class IRSensor(object):
                     logger.info('generic handler')
             except Exception as e:
                 logger.info('error handled module sensor')
+                logger.info(e)
 
         def isPressed(self):
             return self.pressed
@@ -193,6 +194,8 @@ class IRSensor(object):
             return self.sensor.is_pressed
 
         def setHandler(self,handler):
+            logger.info('irsensor handler set')
+            print('irsensor handler set')
             self.handler = handler
 
         def releaseHandler(self):
@@ -208,6 +211,11 @@ class IRSensor(object):
                 IRSensor.__instance=IRSensor._piSensor(handler)
             else:
                 IRSensor.__instance=IRSensor._dummySensor(handler)
+        else:
+            if handler is not None:
+                IRSensor.__instance.setHandler(handler)
+            else:
+                IRSensor.__instance.releaseHandler()
 
     def __getattr__(self, attr):
         """ Delegate access to implementation """
@@ -231,26 +239,31 @@ class IRSensor(object):
 ###########################
 class Valve(object):
     class _dummyValve:
-        def __init__(self):
-            pass
+        def __init__(self,openTime):
+            logger.info('Using Dummy Valve')
+            self.state = False
+            self.openTime = openTime
 
         def close(self):
-            pass
+            self.state = False
         
         def open(self):
-            pass
+            self.state = True
 
         def drop(self):
-            logger.info('valve drop computer')
-            pass
+            self.state = False
 
         def setOpenTime(self, openTime):
-            logger.info('valve drop computer')
-            pass
+            self.openTime = openTime
 
+        def getOpenTime(self):
+            return self.openTime
+
+        def isOpen(self):
+            return self.state
 
     class _piValve:
-        def __init__(self,openTime=.4):
+        def __init__(self,openTime):
             from gpiozero import LED
             self.valve = LED(valvePIN)
             self.openTime = openTime
@@ -258,28 +271,32 @@ class Valve(object):
         def setOpenTime(self,openTime):
             self.openTime = openTime
 
+        def getOpenTime(self):
+            return self.openTime
+
+        def isOpen(self):
+            return self.valve.is_lit
+
         def open(self):
-            logger.info('Valve open')
             self.valve.on()
 
         def close(self):
-            logger.info('Valve closed')
             self.valve.off()
 
         def drop(self):
-            logger.info('Valve drop')
             self.valve.blink(on_time=self.openTime,n=1)
+            self.valve.off()
 
     __instance = None
     __arch = None
 
-    def __init__(self):
+    def __init__(self,openTime=.4):
         if Valve.__instance is None:
             Valve.__arch = _getArch()
             if  Valve.__arch == RASPBERRY_PI:
-                Valve.__instance=Valve._piValve()
+                Valve.__instance=Valve._piValve(openTime)
             else:
-                Valve.__instance=Valve._dummyValve()
+                Valve.__instance=Valve._dummyValve(openTime)
 
     def __getattr__(self, attr):
         """ Delegate access to implementation """
@@ -293,13 +310,22 @@ class Valve(object):
         logger.info('Valve openTime {:.4f}'.format(openTime))
         return self.__instance.setOpenTime(openTime)
 
+    def getOpenTime(self):
+        return self.__instance.getOpenTime()
+
+    def isOpen(self):
+        return self.__instance.isOpen()
+
     def open(self):
+        logger.info('Valve open')
         return self.__instance.open()
 
     def close(self):
+        logger.info('Valve closed')
         return self.__instance.close()
 
     def drop(self):
+        logger.info('Valve drop openTime {:.3f}'.format(self.openTime))
         return self.__instance.drop()
 
 if __name__=='__main__':
