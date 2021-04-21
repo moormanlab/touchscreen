@@ -7,6 +7,8 @@ import os, subprocess
 from importlib import import_module
 import inspect
 import datetime
+import pygame_vkeyboard as vkboard
+from return_to_menu import return_to_menu
 
 logger = logging.getLogger('TouchMenu')
 
@@ -253,6 +255,51 @@ def file_menu(surface=create_surface()):
 
     return pMenu
 
+def subject_ID():
+    screen = create_surface()
+    screen.fill((20, 100, 100))
+
+    # Create keyboard
+    layout = vkboard.VKeyboardLayout(vkboard.VKeyboardLayout.QWERTY)
+    keyboard = vkboard.VKeyboard(screen,
+                                 on_key_event,
+                                 layout,
+                                 renderer=vkboard.VKeyboardRenderer.DARK,
+                                 show_text=True,
+                                 joystick_navigation=True)
+
+    font = pygame.font.Font('freesansbold.ttf', 40)
+    text = font.render('Enter', True, (0,0,0), (255,255,255))
+    enter_key = text.get_rect()
+    enter_key.topleft = (670,320)
+
+    running = True
+
+    # Main loop
+    while running:
+        events = pygame.event.get()
+
+        for event in events:
+            if event.type == pygame.QUIT:
+                exit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
+                if enter_pressed:
+                    input = keyboard.get_text()
+                    print(input)
+                    subject_logging(input)
+
+            running = not return_to_menu(event,screen, color = (20, 100, 100))   
+
+        keyboard.update(events)
+        rects = keyboard.draw(screen)
+
+        screen.blit(text, enter_key)
+
+        # Flip only the updated area
+        pygame.display.update(rects)
+    
+    
 def subject_logging(input):
     logger = logging.getLogger('SubjectID')
     logger.info('ID: ' + input)
@@ -273,10 +320,11 @@ def initial_buttons(menu, surface):
     hMenu = settings_menu()
     fMenu = file_menu(surface)
     
-    menu.add.text_input('Subject ID: ', onreturn=subject_logging)
+    #menu.add.text_input('Subject ID: ', onreturn=subject_logging)
     menu.add.vertical_margin(40)
     menu.add.button(hMenu.get_title(), hMenu)
     menu.add.button(fMenu.get_title(), fMenu)
+    menu.add.button('Subject ID', subject_ID)
 
 
 def initialize_menu(title):
@@ -290,6 +338,9 @@ def initialize_menu(title):
     
     return menu
 
+def on_key_event(text):
+    """ Print the current text. """
+    print('Current text:', text)
 
 def main():
     # Initializes pygame and logging
@@ -298,7 +349,7 @@ def main():
     
     # Creates surface based on machine
     surface = create_surface()
-
+    
     menu = initialize_menu('Mouse Touchscreen Menu')
 
     # Creates initial buttons
