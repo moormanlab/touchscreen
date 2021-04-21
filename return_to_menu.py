@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger('retMenu')
 
-def return_to_menu(event,screen):
+def return_to_menu(event,screen, color = (255,0,0)):
     if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
         # Draws invisible box in top right corner to return to menu
         closing_box = pygame.draw.rect(screen, (0,0,0), (700,0, 100,100))
@@ -15,7 +15,7 @@ def return_to_menu(event,screen):
         elapsed = 0
         # Checks time elapsed every second and closes program once 2 seconds have passed
         while curs_in_box:
-            pygame.draw.rect(screen, (255,0,0), (700,0, 100,100))
+            pygame.draw.rect(screen, color, (700,0, 100,100))
             pygame.display.update()
 
             if elapsed > 2:
