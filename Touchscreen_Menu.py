@@ -284,6 +284,7 @@ def subject_ID():
                 exit()
 
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
+                enter_pressed = enter_key.collidepoint(pygame.mouse.get_pos())
                 if enter_pressed:
                     input = keyboard.get_text()
                     print(input)
@@ -295,6 +296,7 @@ def subject_ID():
         rects = keyboard.draw(screen)
 
         screen.blit(text, enter_key)
+
 
         # Flip only the updated area
         pygame.display.update(rects)
