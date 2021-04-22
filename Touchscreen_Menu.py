@@ -39,29 +39,37 @@ def import_tests(test_file):
     #reload_module in case the functions changes while the system is running
     reload_module(module)
     # Retrieves functions from module
-    functions = inspect.getmembers(module, inspect.isfunction)
+    functions = inspect.getmembers(module, inspect.isclass)
     return functions
+
+
+def protocol_run(protocol,surface):
+
+    protoc = protocol(surface)
+    protoc._init()
+    protoc._run()
+    protoc._end()
+
+    return
+
 
 def function_menu(test_file,surface):
     # New function menu
     fmenu = initialize_menu(test_file)
-    exclude_functions = ['return_to_menu', 'isRaspberryPI', 'sensorHandler']
+
+    exclude_classes = ['BaseProtocol', 'Protocol']
 
     # Get functions from test_file
-    functions = import_tests(test_file)
+    protocols = import_tests(test_file)
 
     # Creates a button for each function
-    for function in functions:
-        function_name, function_call = function
+    for protocol in protocols:
+        protocol_name, protocol_call = protocol
 
-        if function_name in exclude_functions:
+        if protocol_name in exclude_classes:
             continue
-        # Function has 0 arguments
-        elif function_call.__code__.co_argcount == 0:
-            fmenu.add.button(function_name, function_call)
-        # Function has 1 argument (assumes Surface is the input)
         else:
-            fmenu.add.button(function_name, function_call, surface)
+            fmenu.add.button(protocol_name, protocol_run, protocol_call, surface)
 
     close_button(fmenu)
 
@@ -318,7 +326,7 @@ def initialize_logging():
     now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
     os.makedirs('logs',exist_ok=True)
     logfile = 'logs/' + now + '.log'
-    logging.basicConfig(filename =logfile, level= logging.INFO, filemode='w+',
+    logging.basicConfig(filename =logfile, level= logging.DEBUG, filemode='w+',
                         datefmt='%Y/%m/%d@@%H:%M:%S',
                         format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s')
 
@@ -350,6 +358,8 @@ def main():
     # Initializes pygame and logging
     pygame.init()
     initialize_logging()
+
+    logger.debug('Running in Raspberry PI = {}'.format(isRaspberryPI()))
     
     # Creates surface based on machine
     surface = create_surface()
