@@ -44,6 +44,7 @@ class testingTouch(Protocol):
         self.valve.setOpenTime(.05)
         self.pressed = False
         self.lastposition = 0
+        self.log('Test Started')
 
     def main(self,event):
         self.screen.clean()
@@ -56,9 +57,10 @@ class testingTouch(Protocol):
             self.draw.circle(white, event.position, 20)
             self.lastposition = event.position
             self.screen.update()
+            self.sound.play(frec=440,duration=.2)
+            self.log('Valve drop, giving reward')
             self.valve.drop()
             self.log('pointer down')
-            self.sound.play(frec=440,duration=.2)
 
         elif event.type == POINTERMOTION:
             self.lastposition = event.position

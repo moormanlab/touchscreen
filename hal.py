@@ -154,15 +154,14 @@ class IRSensor(object):
                   self.pressed = False
 
         def _sensorHandler(self):
-            logger.info('ir sensor activated')
+            logger.info('IR sensor activated')
             try:
                 if self.handler is not None:
                     self.handler()
                 else:
                     logger.info('generic handler')
-            except Exception as e:
-                logger.info('error handled module sensor')
-                logger.info(e)
+            except Exception:
+                logger.exception('Exception handled module sensor')
 
         def isPressed(self):
             return self.pressed
@@ -181,14 +180,14 @@ class IRSensor(object):
             self.sensor.when_pressed = self._sensorHandler
 
         def _sensorHandler(self):
-            logger.info('ir sensor activated')
+            logger.info('IR sensor activated')
             try:
                 if self.handler is not None:
                     self.handler()
                 else:
                     logger.info('generic handler')
             except Exception as e:
-                logger.info('error handled module sensor')
+                logger.exception('Exception handled module sensor')
 
         def isPressed(self):
             return self.sensor.is_pressed
@@ -233,6 +232,7 @@ class IRSensor(object):
 
     def releaseHandler(self):
         self.__instance.releaseHandler()
+
 
 ###########################
 ## Valve
@@ -289,7 +289,7 @@ class Valve(object):
     __instance = None
     __arch = None
 
-    def __init__(self,openTime=.4):
+    def __init__(self,openTime=.05):
         if Valve.__instance is None:
             Valve.__arch = _getArch()
             if  Valve.__arch == RASPBERRY_PI:

@@ -145,32 +145,39 @@ class Protocol(BaseProtocol):
         pygame.display.flip()
         logger.info('Start running protocol {}'.format(self.__class__.__name__))
         running = True
+        pressed = False
         while running:
             events = pygame.event.get()
             if events:
               for event in events:
+                logger.debug(event)
                 tEvent = tsEvent()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     tEvent.type = POINTERPRESSED
                     tEvent.position = event.pos
+                    pressed = True
                 elif event.type == pygame.FINGERDOWN:
                     tEvent.type = POINTERPRESSED
                     tEvent.position = (int(event.x*800),int(event.y*480))
-                elif event.type == pygame.MOUSEMOTION:
+                    pressed = True
+                elif event.type == pygame.MOUSEMOTION and pressed:
                     tEvent.type = POINTERMOTION
                     tEvent.position = event.pos
-                elif event.type == pygame.FINGERMOTION:
+                elif event.type == pygame.FINGERMOTION and pressed:
                     tEvent.type = POINTERMOTION
                     tEvent.position = (int(event.x*800),int(event.y*480))
                 elif event.type == pygame.MOUSEBUTTONUP:
                     tEvent.type = POINTERRELEASED
                     tEvent.position = event.pos
+                    pressed = False
                 elif event.type == pygame.FINGERUP:
                     tEvent.type = POINTERRELEASED
                     tEvent.position = (int(event.x*800),int(event.y*480))
+                    pressed = False
 
                 if tEvent.type:
                     self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
+                    logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
 
                 # only on PC
                 if event.type == KEYDOWN: #escape from program

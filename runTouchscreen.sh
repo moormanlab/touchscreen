@@ -1,3 +1,4 @@
 #!/bin/bash
 source /home/pi/touchenv/bin/activate
-python3 /home/pi/touchscreen/Touchscreen_Menu.py
+cd /home/pi/touchscreen/
+python3 Touchscreen_Menu.py
