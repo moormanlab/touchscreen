@@ -146,10 +146,11 @@ class behavioral_test_protocol(Protocol):
         # Fill the background with black
         self.screen.clean()
         #draw test shapes
-        obj1= self.draw_circle(yellow, (75,250), 57)
-        obj2= self.draw_circle(purple , (260, 250), 57)
-        obj3 = self.draw_rect(red, (400,200, 100,100))
-        obj4 = self.draw_rect(blue, (600,200, 125,100))
+        obj1= self.draw.circle(yellow, (75,250), 57)
+        obj2= self.draw.polygon(purple, 5, (260, 250), 57)
+        #obj3 = self.draw.rect(red, start=(400,200), size=(100,100))
+        obj3 = self.draw.polygon(red, 3, center=(450,270), radius=63)
+        obj4 = self.draw.rect(blue, start=(600,200), size=(125,100))
         objList = [obj1,obj2,obj3,obj4]
         
         # Update  the display
@@ -167,7 +168,6 @@ class behavioral_test_protocol(Protocol):
                 self.sound.play()
                 #self.pause(1)
                 self.valve.drop()
-
 
         return
 #
@@ -215,7 +215,7 @@ class operantConditioning(Protocol):
         # Fill the background with black
         self.screen.clean()
         # Draw circles
-        obj1=self.draw.rect(black, coords=(0,0, 800,480))
+        obj1=self.draw.rect(black, start=(0,0), size=(800,480))
 
         # Update  the display
         self.screen.update()
@@ -272,6 +272,8 @@ class classicalConditioning(Protocol):
         self.timeAtWell = 0
         self.mouseAtWell = False
         self.rewardCount = 0
+        self.beamBroken = False
+        self.beamTimer = 0
 
 
     def sensorHandler(self):
@@ -289,7 +291,7 @@ class classicalConditioning(Protocol):
             self.screen.fill(gray)
             self.screen.update()
             #Sleeps program for X seconds
-            time.sleep(sleepTime)
+            time.sleep(self.sleepTime)
             self.log('Finished Trial. Waiting to start next trial')
             self.finishTrial = False
 
@@ -312,9 +314,9 @@ class classicalConditioning(Protocol):
             self.log('Time spent at well: {:.2f}'.format(self.timeAtWell))
 
         if event.type == POINTERPRESSED:
-            logger.debug('Event {}'.format(event.type))
+            self.log('Event {}'.format(event.type))
             mouse_pos= pygame.mouse.get_pos()
-            logger.info('Coordinates:' + str(mouse_pos))
+            self.log('Coordinates:' + str(mouse_pos))
 
     def end(self):
         self.log('Training Ended')

@@ -29,7 +29,6 @@ class test_2(Protocol):
         print('prot AAA')
 
     def main(self,event):
-        #print('prot main')
         print(event)
 
 white = (255,255,255)
@@ -42,16 +41,16 @@ class testingTouch(Protocol):
 
     def main(self,event):
         self.log(event)
-        self.screen_clean()
+        self.screen.clean()
         if self.pressed:
-            self.draw_circle(white, self.lastposition, 20)
-        self.screen_update()
+            self.draw.circle(white, self.lastposition, 20)
+        self.screen.update()
 
         if event.type == POINTERPRESSED:
             self.pressed = True
-            self.draw_circle(white, event.position, 20)
+            self.draw.circle(white, event.position, 20)
             self.lastposition = event.position
-            self.screen_update()
+            self.screen.update()
             self.valve.drop()
             self.log('pointer down')
             self.sound.play(frec=440,duration=.2)
