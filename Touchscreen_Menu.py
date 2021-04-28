@@ -232,7 +232,28 @@ def settings_menu(surface):
     vMenu = valve_menu()
     irMenu = ir_menu()
     sndMenu = sound_menu()
+    current_level = logging.getLogger().level
+    items = [('Regular', logging.INFO),('Debug', logging.DEBUG)]
+    for i in range(len(items)):
+        if items[i][1] == current_level:
+            current_level_index = i
+            break
 
+    def change_loglevel(item,level):
+        current = logging.getLogger().level
+
+        if level == current:
+            pass
+        elif level == logging.DEBUG:
+            logging.getLogger().setLevel(level)
+            logger.debug('Debug logging mode activated')
+        elif level == logging.INFO:
+            logger.debug('Debug logging mode deactivated')
+            logging.getLogger().setLevel(level)
+        else:
+            logger.error('Wrong logging level assignment')
+
+    sMenu.add.selector('Logging Level: ',items,onchange=change_loglevel,default=current_level_index)
     sMenu.add.button(vMenu.get_title(),vMenu)
     sMenu.add.button(irMenu.get_title(),irMenu)
     sMenu.add.button(sndMenu.get_title(),sndMenu)
@@ -268,6 +289,7 @@ def file_menu(surface=create_surface()):
     close_button(pMenu)
 
     pMenu.mainloop(surface)
+
 
 def subject_ID():
     screen = create_surface()
@@ -326,10 +348,9 @@ def initialize_logging():
     now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
     os.makedirs('logs',exist_ok=True)
     logfile = 'logs/' + now + '.log'
-    logging.basicConfig(filename =logfile, level= logging.DEBUG, filemode='w+',
+    logging.basicConfig(filename =logfile, level= logging.INFO, filemode='w+',
                         datefmt='%Y/%m/%d@@%H:%M:%S',
                         format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s')
-
 
 
 def initial_buttons(menu, surface):
@@ -342,7 +363,7 @@ def initial_buttons(menu, surface):
 def initialize_menu(title):
     # Creates menu, adding title, and enabling touchscreen mode
     menu = pygame_menu.Menu(title, 800,480,
-                            theme=pygame_menu.themes.THEME_GREEN, 
+                            theme=pygame_menu.themes.THEME_DARK,
                             onclose=pygame_menu.events.RESET,
                             touchscreen=True if isRaspberryPI() else False,
                             joystick_enabled=False,

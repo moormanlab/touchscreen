@@ -146,7 +146,7 @@ class Protocol(BaseProtocol):
                     tEvent.position = (int(event.x*800),int(event.y*480))
 
                 if tEvent.type:
-                    logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
+                    self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
 
                 # only on PC
                 if event.type == KEYDOWN: #escape from program
@@ -164,7 +164,7 @@ class Protocol(BaseProtocol):
                 self.main(tsEvent())
 
     def _end(self):
-        logger.debug('End running protocol')
+        self.logger.debug('End running protocol')
         self.end()
 
     def main(self,event):

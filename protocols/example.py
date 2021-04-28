@@ -26,21 +26,23 @@ class test_1(BaseProtocol):
 
 class test_2(Protocol):
     def init(self):
-        print('prot AAA')
+        self.log('start testing test_2')
 
     def main(self,event):
-        print(event)
+        self.log(event)
+
+    def end(self):
+        self.log('end testing test_2')
 
 white = (255,255,255)
 class testingTouch(Protocol):
     def init(self):
         self.sensor.setHandler(self.sensorHandler)
-        self.valve.setOpenTime(.01)
+        self.valve.setOpenTime(.05)
         self.pressed = False
         self.lastposition = 0
 
     def main(self,event):
-        self.log(event)
         self.screen.clean()
         if self.pressed:
             self.draw.circle(white, self.lastposition, 20)
@@ -66,3 +68,6 @@ class testingTouch(Protocol):
 
     def sensorHandler(self):
         self.log('Decide what to do when the IRbeam was broken')
+
+    def end(self):
+        self.log('ended training')
