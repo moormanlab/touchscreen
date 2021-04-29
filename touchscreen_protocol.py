@@ -50,25 +50,56 @@ import shapes
 
 class BaseProtocol(object):
 
-    def __init__(self,surface):
+    def __init__(self,surface,subject=None,experimenter=None):
         self._type = 'BaseProtocol'
         self.surface = surface
         self.valve = Valve()
         self.sensor = IRSensor(self.sensorHandler)
         self.sound = Buzzer()
+        self._logfile = None
+        self._subject = subject
+        self._experimenter = None
+        self.logger = logging.getLogger('Protocol')
     
-    def _init(self):
+    def _init(self,logHdlr):
+        self._logHdlr = logHdlr
+        self._logfile = self._logHdlr.baseFilename
+        self.logger = logging.getLogger(self.__class__.__name__)
+        logger.info('Setting log file to {}'.format(self._logfile))
+        self.logger.addHandler(self._logHdlr)
         logger.debug('Protocol type {}'.format(self._type))
         self.init()
 
     def _run(self):
-        logger.debug('Start running baseprotocol')
+        logger.info('Start running baseprotocol {}'.format(self.__class__.__name__))
         self.main()
 
     def _end(self):
-        logger.debug('End running baseprotocol')
+        logger.info('End running baseprotocol {}'.format(self.__class__.__name__))
         self.end()
     
+    def setLogFile(self,filename):
+        import datetime, os
+        oldfile = self._logHdlr.baseFilename
+        logPath = os.path.dirname(oldfile)
+        self._logHdlr.close()
+        # maybe delete old file
+        #os.remove(oldlog)
+
+        #preparing log filename
+        now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+        filename = filename + '_' + now + '.log'
+        filename = filename.replace(' ','_')
+
+        self._logHdlr.baseFilename = os.path.join(logPath, filename)
+        self._logfile = self._logHdlr.baseFilename
+        logger.info('Changing log file to {}'.format(self._logfile))
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.addHandler(self._logHdlr)
+
+    def log(self,string):
+        self.logger.info(string)
+
     def sensorHandler(self):
         pass
 
@@ -102,24 +133,17 @@ class Protocol(BaseProtocol):
             return self.surface.fill(self.backcolor)
 
 
-    def __init__(self,surface,backcolor=(0,0,0)):
-        BaseProtocol.__init__(self,surface)
+    def __init__(self,surface,subject=None,experimenter=None,backcolor=(0,0,0)):
+        BaseProtocol.__init__(self,surface,subject,experimenter)
         self.screen = Protocol.Screen(surface)
         self.draw = shapes.Draw(surface)
         self.backcolor = backcolor
         self._type = 'Protocol'
-        self.logger = logging.getLogger('Protocol')
-
-    def setLoggerName(self,name):
-        self.logger = logging.getLogger(name)
-
-    def log(self,string):
-        self.logger.info(string)
 
     def _run(self):
         self.surface.fill((0,0,0))
         pygame.display.flip()
-        self.logger.debug('Start running protocol')
+        logger.info('Start running protocol {}'.format(self.__class__.__name__))
         running = True
         while running:
             events = pygame.event.get()
@@ -164,7 +188,7 @@ class Protocol(BaseProtocol):
                 self.main(tsEvent())
 
     def _end(self):
-        self.logger.debug('End running protocol')
+        logger.info('End running protocol {}'.format(self.__class__.__name__))
         self.end()
 
     def main(self,event):

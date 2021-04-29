@@ -14,6 +14,9 @@ import time
 from fontTools.ttLib import TTFont
 
 logger = logging.getLogger('TouchMenu')
+logPath = os.path.abspath('logs')
+protocolsPath = 'protocols'
+userLogHdlr = None
 
 def back_button(menu):
     menu.add.vertical_margin(30)
@@ -29,7 +32,7 @@ def scan_directory():
     test_files = []
 
     # Goes through each file and checks if they are python files
-    for files in os.listdir('protocols'):
+    for files in os.listdir(protocolsPath):
         if files.endswith('.py'):
             test_files.append(files)
 
@@ -37,7 +40,7 @@ def scan_directory():
 
 def import_tests(test_file):
     # Imports test file as a module (excludes .py extension)
-    module = import_module('protocols.'+test_file[:-3])
+    module = import_module(protocolsPath+'.'+test_file[:-3])
     #reload_module in case the functions changes while the system is running
     reload_module(module)
     # Retrieves functions from module
@@ -47,10 +50,18 @@ def import_tests(test_file):
 
 def protocol_run(protocol,surface):
 
-    protoc = protocol(surface)
-    protoc._init()
+    logger.debug('Starting protocol {}'.format(protocol.__name__))
+    protoc = protocol(surface,subject_ID)
+
+    global userLogHdlr
+    #create new log file for protocol running
+    now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+    userLogHdlr.baseFilename = os.path.join(logPath, protocol.__name__+ '_' + now + '.log')
+    protoc._init(userLogHdlr)
     protoc._run()
     protoc._end()
+    #close protocol logfile
+    userLogHdlr.close()
 
     return
 
@@ -223,6 +234,7 @@ def sound_menu():
 
     return sndMenu
 
+
 def settings_menu(surface):
 
     sMenu = initialize_menu('Settings')
@@ -357,13 +369,32 @@ def subject_logging(input):
 
 def initialize_logging():
     # Initialize logging 
-    now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
-    os.makedirs('logs',exist_ok=True)
-    logfile = 'logs/' + now + '.log'
-    logging.basicConfig(filename =logfile, level= logging.INFO, filemode='w+',
-                        datefmt='%Y/%m/%d@@%H:%M:%S',
-                        format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s')
+    formatDate='%Y/%m/%d@@%H:%M:%S'
+    sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
+    sysFormatter = logging.Formatter(fmt=sysFormatStr,datefmt=formatDate)
+    userFormatStr = '%(asctime)s.%(msecs)03d@@%(message)s'
+    userFormatter = logging.Formatter(fmt=userFormatStr,datefmt=formatDate)
 
+    log = logging.getLogger()
+    log.setLevel(logging.DEBUG)
+
+    now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+    os.makedirs(logPath,exist_ok=True)
+
+    # the delay=1 should prevent the file from being opened until used.
+    systemLogFile = os.path.join(logPath, now + '-system.log')
+    systemLogHdlr = logging.FileHandler(systemLogFile, mode='w')
+    systemLogHdlr.setFormatter(sysFormatter)
+    log.addHandler(systemLogHdlr)
+    
+    global userLogHdlr
+    #prepare userLog Handler with dummy log file
+    userLogFile = os.path.join('/tmp', now + '-userprotocol.log')
+    userLogHdlr = logging.FileHandler(userLogFile, mode='w')
+    userLogHdlr.setLevel(logging.INFO)
+    userLogHdlr.setFormatter(userFormatter)
+    userLogHdlr.close()
+    logger.info('Logging initialized')
 
 def initial_buttons(menu, surface):
     menu.add.button('Subject ID', subject_ID)
@@ -405,6 +436,7 @@ def main():
     # Allows menu to be run
     menu.mainloop(surface)
 
+    logger.info('Exiting Menu')
 
 if __name__ == "__main__":
     main()

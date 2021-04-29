@@ -3,7 +3,7 @@ import touchscreen_protocol as ts
 
 class test_1(BaseProtocol):
     def init(self):
-        print('Base')
+        self.setLogFile('Example')
 
     def main(self):
         import pygame
@@ -26,10 +26,13 @@ class test_1(BaseProtocol):
 
 class test_2(Protocol):
     def init(self):
-        self.log('start testing test_2')
+        self.log('this message will get lost in old log file')
+        self.setLogFile('Example test 2')
+        self.log('start test_2 with new logging file')
 
     def main(self,event):
-        self.log(event)
+        if event.type == POINTERPRESSED:
+            self.log(event)
 
     def end(self):
         self.log('end testing test_2')
