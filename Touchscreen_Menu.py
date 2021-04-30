@@ -10,6 +10,7 @@ import inspect
 import datetime
 import pygame_vkeyboard as vkboard
 from return_to_menu import return_to_menu
+import time
 
 logger = logging.getLogger('TouchMenu')
 
@@ -76,17 +77,21 @@ def function_menu(test_file,surface):
     fmenu.mainloop(surface)
         
 
-def shutdown_pi():
+
+def shutdown_pi_menu():
+
+    def shutdown_pi():
+        logger.info('Shutting down Raspberry pi')
+        time.sleep(.1)
+        subprocess.call(['sudo', 'shutdown', 'now'])
 
     confirm_menu = initialize_menu('Shutdown Device')
-
-    shut_down = ["sudo", "shutdown", "now"]
 
     if isRaspberryPI():
         confirm_msg = "Are you sure you want to shutdown your device?"
         confirm_menu.add.label(confirm_msg)
         confirm_menu.add.button('No', pygame_menu.events.BACK)
-        confirm_menu.add.button('Yes', subprocess.call, shut_down)
+        confirm_menu.add.button('Yes', shutdown_pi)
     else:
         msg = "Device is not a Raspberry Pi. Cannot shut down."
         confirm_menu.add.label(msg)
@@ -228,7 +233,7 @@ def settings_menu(surface):
     IPLabel.add_draw_callback(updateIP)
     sMenu.add.vertical_margin(20)
 
-    confirm_menu = shutdown_pi()
+    confirm_menu = shutdown_pi_menu()
     vMenu = valve_menu()
     irMenu = ir_menu()
     sndMenu = sound_menu()
