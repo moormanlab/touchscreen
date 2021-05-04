@@ -4,3 +4,4 @@ pygame-menu>=4.0
 gpiozero>=1.6.2
 rpi.gpio>=0.7.0
 git+https://github.com/Faylixe/pygame-vkeyboard
+fontTools>=4.22
