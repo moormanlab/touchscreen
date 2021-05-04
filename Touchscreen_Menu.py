@@ -9,6 +9,7 @@ import inspect
 import datetime
 import pygame_vkeyboard as vkboard
 from return_to_menu import return_to_menu
+from fontTools.ttLib import TTFont
 
 logger = logging.getLogger('TouchMenu')
 
@@ -260,7 +261,8 @@ def subject_ID():
     screen.fill((20, 100, 100))
 
     # Create keyboard
-    layout = vkboard.VKeyboardLayout(vkboard.VKeyboardLayout.QWERTY)
+    keys = ['1234567890','qwertyuiop','asdfghjkl','.-zxcvbnm_/']
+    layout = vkboard.VKeyboardLayout(keys, allow_special_chars=False)
     keyboard = vkboard.VKeyboard(screen,
                                  on_key_event,
                                  layout,
@@ -268,10 +270,12 @@ def subject_ID():
                                  show_text=True,
                                  joystick_navigation=True)
 
-    font = pygame.font.Font('freesansbold.ttf', 40)
-    text = font.render('Enter', True, (0,0,0), (255,255,255))
+    font = pygame.font.Font('DejaVuSans.ttf', 40)
+    enter_text = 'Enter'
+    text = font.render(enter_text,True, (182, 183, 184), (59, 56, 54))
     enter_key = text.get_rect()
     enter_key.topleft = (670,320)
+    #outline = pygame.draw.rect(text, (124, 183, 62), enter_key,3)
 
     running = True
 
@@ -286,21 +290,24 @@ def subject_ID():
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
                 enter_pressed = enter_key.collidepoint(pygame.mouse.get_pos())
                 if enter_pressed:
+                    text = font.render('Enter', True, (255,255,255), (47,48,51))
                     input = keyboard.get_text()
                     print(input)
                     subject_logging(input)
 
-            running = not return_to_menu(event,screen, color = (20, 100, 100))   
+            else:
+                text = font.render('Enter', True, (182, 183, 184), (59, 56, 54))
+
+
+            running = not return_to_menu(event,screen, color = (20, 100, 100))
 
         keyboard.update(events)
         rects = keyboard.draw(screen)
 
         screen.blit(text, enter_key)
-
-
-        # Flip only the updated area
         pygame.display.update(rects)
-    
+        pygame.display.update(enter_key)
+        #pygame.display.update(outline)
     
 def subject_logging(input):
     logger = logging.getLogger('SubjectID')
