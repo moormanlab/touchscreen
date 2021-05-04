@@ -285,7 +285,6 @@ class Valve(object):
 
         def drop(self):
             self.valve.blink(on_time=self.openTime,n=1)
-            self.valve.off()
 
     __instance = None
     __arch = None

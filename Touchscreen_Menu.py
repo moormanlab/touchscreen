@@ -5,6 +5,7 @@ import logging
 import showip
 import os, subprocess
 from importlib import import_module
+from importlib import reload as reload_module
 import inspect
 import datetime
 import pygame_vkeyboard as vkboard
@@ -13,53 +14,68 @@ from fontTools.ttLib import TTFont
 
 logger = logging.getLogger('TouchMenu')
 
+def back_button(menu):
+    menu.add.vertical_margin(30)
+    menu.add.button('Back', pygame_menu.events.BACK)
+
+def close_button(menu):
+    menu.add.vertical_margin(30)
+    menu.add.button('Back', pygame_menu.events.CLOSE)
+
 # Scans directory for relevent python files and returns the file names as an array
 def scan_directory():
-    exclude_files = ['Touchscreen_Menu.py', 'hal.py', 'showip.py', 'return_to_menu.py']
     # List of file names in directory
     test_files = []
 
     # Goes through each file and checks if they are python files
-    for files in os.listdir():
-        if files.endswith('.py') and files not in exclude_files:
+    for files in os.listdir('protocols'):
+        if files.endswith('.py'):
             test_files.append(files)
 
     return test_files
 
 def import_tests(test_file):
     # Imports test file as a module (excludes .py extension)
-    module = import_module(test_file[:-3])
+    module = import_module('protocols.'+test_file[:-3])
+    #reload_module in case the functions changes while the system is running
+    reload_module(module)
     # Retrieves functions from module
-    functions = inspect.getmembers(module, inspect.isfunction)
+    functions = inspect.getmembers(module, inspect.isclass)
     return functions
+
+
+def protocol_run(protocol,surface):
+
+    protoc = protocol(surface)
+    protoc._init()
+    protoc._run()
+    protoc._end()
+
+    return
+
 
 def function_menu(test_file,surface):
     # New function menu
-    menu = initialize_menu(test_file)
+    fmenu = initialize_menu(test_file)
 
-    exclude_functions = ['return_to_menu', 'isRaspberryPI', 'sensorHandler']
+    exclude_classes = ['BaseProtocol', 'Protocol']
 
     # Get functions from test_file
-    functions = import_tests(test_file)
+    protocols = import_tests(test_file)
 
     # Creates a button for each function
-    for function in functions:
-        function_name, function_call = function
+    for protocol in protocols:
+        protocol_name, protocol_call = protocol
 
-        if function_name in exclude_functions:
+        if protocol_name in exclude_classes:
             continue
-        # Function has 0 arguments
-        elif function_call.__code__.co_argcount == 0:
-            menu.add.button(function_name, function_call)
-        # Function has 1 argument (assumes Surface is the input)
         else:
-            menu.add.button(function_name, function_call, surface)
+            fmenu.add.button(protocol_name, protocol_run, protocol_call, surface)
 
-    return menu
+    close_button(fmenu)
+
+    fmenu.mainloop(surface)
         
-def back_button(menu):
-    menu.add.vertical_margin(30)
-    menu.add.button('Back', pygame_menu.events.BACK)
 
 def shutdown_pi():
 
@@ -172,14 +188,14 @@ def sound_menu():
             params.frec = params.frec - 10.0
 
     def incduration():
-        params.duration = params.duration + 0.5
+        params.duration = params.duration + 0.1
 
     def decduration():
-        if params.duration > .5:
-            params.duration = params.duration - 0.5
+        if params.duration > .1:
+            params.duration = params.duration - 0.1
 
     def updateVal(Label,menu):
-        Label.set_title('Frequency {} | Duration {}'.format(params.frec,params.duration))
+        Label.set_title('Frequency {:3.0f} Hz | Duration {:2.1f} s'.format(params.frec,params.duration))
 
     def playsnd():
         buzzer.play(params.frec,params.duration)
@@ -202,7 +218,7 @@ def sound_menu():
 
     return sndMenu
 
-def settings_menu():
+def settings_menu(surface):
 
     sMenu = initialize_menu('Settings')
 
@@ -217,16 +233,37 @@ def settings_menu():
     vMenu = valve_menu()
     irMenu = ir_menu()
     sndMenu = sound_menu()
+    current_level = logging.getLogger().level
+    items = [('Regular', logging.INFO),('Debug', logging.DEBUG)]
+    for i in range(len(items)):
+        if items[i][1] == current_level:
+            current_level_index = i
+            break
 
+    def change_loglevel(item,level):
+        current = logging.getLogger().level
+
+        if level == current:
+            pass
+        elif level == logging.DEBUG:
+            logging.getLogger().setLevel(level)
+            logger.debug('Debug logging mode activated')
+        elif level == logging.INFO:
+            logger.debug('Debug logging mode deactivated')
+            logging.getLogger().setLevel(level)
+        else:
+            logger.error('Wrong logging level assignment')
+
+    sMenu.add.selector('Logging Level: ',items,onchange=change_loglevel,default=current_level_index)
     sMenu.add.button(vMenu.get_title(),vMenu)
     sMenu.add.button(irMenu.get_title(),irMenu)
     sMenu.add.button(sndMenu.get_title(),sndMenu)
     sMenu.add.vertical_margin(10)
     sMenu.add.button(confirm_menu.get_title(), confirm_menu)
 
-    back_button(sMenu)
+    close_button(sMenu)
 
-    return sMenu
+    sMenu.mainloop(surface)
 
 
 def create_surface():
@@ -248,13 +285,12 @@ def file_menu(surface=create_surface()):
     pMenu = initialize_menu('Programs')
     
     for files in test_files:
-        func_menu = function_menu(files,surface)
-        pMenu.add.button(files, func_menu)
-        back_button(func_menu)
+        pMenu.add.button(files, function_menu, files, surface)
     
-    back_button(pMenu)
+    close_button(pMenu)
 
-    return pMenu
+    pMenu.mainloop(surface)
+
 
 def subject_ID():
     screen = create_surface()
@@ -324,22 +360,17 @@ def initialize_logging():
                         format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s')
 
 
-
 def initial_buttons(menu, surface):
-    hMenu = settings_menu()
-    fMenu = file_menu(surface)
-    
-    #menu.add.text_input('Subject ID: ', onreturn=subject_logging)
-    menu.add.vertical_margin(40)
-    menu.add.button(hMenu.get_title(), hMenu)
-    menu.add.button(fMenu.get_title(), fMenu)
     menu.add.button('Subject ID', subject_ID)
+    menu.add.button('Protocols',file_menu, surface)
+    menu.add.vertical_margin(40)
+    menu.add.button('Settings', settings_menu,surface)
 
 
 def initialize_menu(title):
     # Creates menu, adding title, and enabling touchscreen mode
     menu = pygame_menu.Menu(title, 800,480,
-                            theme=pygame_menu.themes.THEME_GREEN, 
+                            theme=pygame_menu.themes.THEME_DARK,
                             onclose=pygame_menu.events.RESET,
                             touchscreen=True if isRaspberryPI() else False,
                             joystick_enabled=False,
@@ -355,6 +386,8 @@ def main():
     # Initializes pygame and logging
     pygame.init()
     initialize_logging()
+
+    logger.debug('Running in Raspberry PI = {}'.format(isRaspberryPI()))
     
     # Creates surface based on machine
     surface = create_surface()
