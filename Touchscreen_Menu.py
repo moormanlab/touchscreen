@@ -40,29 +40,40 @@ def scan_directory():
 
 def import_protocols(filename):
     # Imports file as a module (excludes .py extension)
-    module = import_module(protocolsPath+'.'+filename[:-3])
-    #reload_module in case the functions changes while the system is running
-    reload_module(module)
-    # Retrieves classes from module
-    classes = inspect.getmembers(module, inspect.isclass)
-    return classes
+    try:
+        module = import_module(protocolsPath+'.'+filename[:-3])
+        #reload_module in case the functions changes while the system is running
+        reload_module(module)
+        # Retrieves classes from module
+        classes = inspect.getmembers(module, inspect.isclass)
+    except Exception:
+        logger.exception('Exception when importing file {}'.format(filename))
+        #TODO add an error message in the screen
+        classes = []
 
+    return classes
 
 def protocol_run(protocol,surface):
 
-    logger.debug('Starting protocol {}'.format(protocol.__name__))
-    protoc = protocol(surface,subject_ID)
-
     global userLogHdlr
-    #create new log file for protocol running
-    now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
-    userLogHdlr.baseFilename = os.path.join(logPath, protocol.__name__+ '_' + now + '.log')
 
-    protoc._init(userLogHdlr)
-    protoc._run()
-    protoc._end()
-    #close protocol logfile
-    userLogHdlr.close()
+    logger.debug('Starting protocol {}'.format(protocol.__name__))
+
+    try:
+        protoc = protocol(surface,subject_ID)
+
+        #create new log file for protocol running
+        now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+        userLogHdlr.baseFilename = os.path.join(logPath, protocol.__name__+ '_' + now + '.log')
+
+        protoc._init(userLogHdlr)
+        protoc._run()
+        protoc._end()
+        #close protocol logfile
+        userLogHdlr.close()
+    except Exception:
+        logger.exception('Exception running protocol {}'.format(protocol.__name__))
+        #TODO add an error message in the screen
 
     return
 
@@ -91,7 +102,6 @@ def function_menu(filename,surface):
     close_button(fmenu)
 
     fmenu.mainloop(surface)
-        
 
 
 def shutdown_pi_menu():
@@ -115,6 +125,7 @@ def shutdown_pi_menu():
     back_button(confirm_menu)
 
     return confirm_menu
+
 
 def valve_menu():
 
@@ -187,6 +198,7 @@ def ir_menu():
     back_button(irMenu)
 
     return irMenu
+
 
 def sound_menu():
 
@@ -400,6 +412,7 @@ def initialize_logging():
     userLogHdlr.close()
     logger.info('Logging initialized')
 
+
 def initial_buttons(menu, surface):
     menu.add.button('Subject ID', subject_ID)
     menu.add.button('Protocols',file_menu, surface)
@@ -441,6 +454,8 @@ def main():
     menu.mainloop(surface)
 
     logger.info('Exiting Menu')
+
+    return
 
 if __name__ == "__main__":
     main()
