@@ -74,3 +74,10 @@ class testingTouch(Protocol):
 
     def end(self):
         self.log('ended training')
+
+
+#This Test will not be loaded because it is missing correct inheritance
+class Test(object):
+
+    def init(self):
+        pass

@@ -29,23 +29,23 @@ def close_button(menu):
 # Scans directory for relevent python files and returns the file names as an array
 def scan_directory():
     # List of file names in directory
-    test_files = []
+    files = []
 
     # Goes through each file and checks if they are python files
-    for files in os.listdir(protocolsPath):
-        if files.endswith('.py'):
-            test_files.append(files)
+    for filename in os.listdir(protocolsPath):
+        if filename.endswith('.py'):
+            files.append(filename)
 
-    return test_files
+    return files
 
-def import_tests(test_file):
-    # Imports test file as a module (excludes .py extension)
-    module = import_module(protocolsPath+'.'+test_file[:-3])
+def import_protocols(filename):
+    # Imports file as a module (excludes .py extension)
+    module = import_module(protocolsPath+'.'+filename[:-3])
     #reload_module in case the functions changes while the system is running
     reload_module(module)
-    # Retrieves functions from module
-    functions = inspect.getmembers(module, inspect.isclass)
-    return functions
+    # Retrieves classes from module
+    classes = inspect.getmembers(module, inspect.isclass)
+    return classes
 
 
 def protocol_run(protocol,surface):
@@ -57,6 +57,7 @@ def protocol_run(protocol,surface):
     #create new log file for protocol running
     now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
     userLogHdlr.baseFilename = os.path.join(logPath, protocol.__name__+ '_' + now + '.log')
+
     protoc._init(userLogHdlr)
     protoc._run()
     protoc._end()
@@ -66,23 +67,26 @@ def protocol_run(protocol,surface):
     return
 
 
-def function_menu(test_file,surface):
+def function_menu(filename,surface):
     # New function menu
-    fmenu = initialize_menu(test_file)
+    fmenu = initialize_menu(filename)
 
-    exclude_classes = ['BaseProtocol', 'Protocol']
+    base_classes = ['BaseProtocol', 'Protocol']
 
     # Get functions from test_file
-    protocols = import_tests(test_file)
+    protocols = import_protocols(filename)
 
     # Creates a button for each function
     for protocol in protocols:
         protocol_name, protocol_call = protocol
 
-        if protocol_name in exclude_classes:
+        if protocol_name in base_classes:
             continue
         else:
-            fmenu.add.button(protocol_name, protocol_run, protocol_call, surface)
+            for b in protocol_call.__bases__:
+                if b.__name__ in base_classes:
+                    fmenu.add.button(protocol_name, protocol_run, protocol_call, surface)
+                    break
 
     close_button(fmenu)
 
@@ -297,12 +301,12 @@ def create_surface():
 
 def file_menu(surface=create_surface()):
     # Retrieves test files
-    test_files = scan_directory()
+    files = scan_directory()
     # Creates new sub menu
     pMenu = initialize_menu('Programs')
     
-    for files in test_files:
-        pMenu.add.button(files, function_menu, files, surface)
+    for filename in files:
+        pMenu.add.button(filename, function_menu, filename, surface)
     
     close_button(pMenu)
 
