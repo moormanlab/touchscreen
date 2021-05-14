@@ -15,6 +15,9 @@ from return_to_menu import return_to_menu
 from hal import isRaspberryPI, LiqReward, IRSensor, Sound, Battery
 from utils import SCREENWIDTH, SCREENHEIGHT, getPosition
 
+import threading
+from server.app import app
+
 logger = logging.getLogger('TouchMenu')
 
 logPath = os.path.abspath('logs')
@@ -733,6 +736,9 @@ def main_menu():
     database_init()
 
     initialize_logging()
+
+    t1=threading.Thread(target=app.run,kwargs={'debug':False,'use_reloader':False,'host':'0.0.0.0','port':'5001'},daemon=True)
+    t1.start()
 
     logger.debug('Running in Raspberry PI = {}'.format(isRaspberryPI()))
     

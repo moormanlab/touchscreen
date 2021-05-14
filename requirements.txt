@@ -6,3 +6,6 @@ rpi.gpio>=0.7.0
 pygame-vkeyboard>=2.0.9
 tinydb>=4.4.0
 pyserial>=3.5
+flask
+flask-reuploaded
+git+https://github.com/yagui/flaskcode@touchscreen

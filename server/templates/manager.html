@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang=en>
+<head>
+    <meta charset=utf-8>
+    <title>Protocol Manager</title>
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <p> Last messages
+    <ul class=flashes>
+    {% for message in messages %}
+        <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+    </p>
+    {% endif %}
+    {% endwith %}
+
+
+<h1>{{ tree.name }}</h1>
+<form method=POST enctype=multipart/form-data action="{{ url_for('manager') }}">
+{%- for item in tree.children recursive %}
+  <input type="radio" id="{{ item }}" name="file" value="{{ item }}">
+  <label for="{{ item }}">{{ item }}</label><br>
+{%- endfor %}
+    <button type="submit" name='actionFile' value='edit'>Edit</button>
+    <button type="submit" name='actionFile' value='remove'>Remove</button>
+    <button type="submit" name='actionFile' value='download'>Download</button>
+</form>
+
+
+<p> Upload New Protocol</p>
+<form method=POST enctype=multipart/form-data action="{{ url_for('manager') }}">
+    <input type=file name=protocol>
+    <button type="submit" name='newFile' value='upload'>Upload</button>
+</form>
+<p><a href='editor'>Editor</a></p>
+<p><a href={{ url_for('index') }}>Back</a></p>
+</body>
+</html>

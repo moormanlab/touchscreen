@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Log Manager</title>
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <p> Last messages
+    <ul class=flashes>
+    {% for message in messages %}
+        <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+    </p>
+    {% endif %}
+    {% endwith %}
+
+
+<h1>{{ ptree.name }}</h1>
+<form method=POST enctype=multipart/form-data action="{{ url_for('logmanager') }}">
+{%- for item in ptree.children recursive %}
+  <input type="radio" name="file" value="{{ item.name }}">
+  <label for="{{ item }}">{{ item.name }}   {{ item.size }}</label><br>
+{%- endfor %}
+    <button type="submit" name='actionFile' value='view'>View</button>
+    <button type="submit" name='actionFile' value='remove'>Remove</button>
+    <button type="submit" name='actionFile' value='download'>Download</button>
+</form>
+
+
+<h1>{{ stree.name }}</h1>
+<form method=POST enctype=multipart/form-data action="{{ url_for('logmanager') }}">
+{%- for item in stree.children recursive %}
+  <input type="radio" name="file" value="{{ item.name }}">
+  <label for="{{ item.name }}">{{ item.name }}   {{ item.size }}</label><br>
+{%- endfor %}
+    <button type="submit" name='actionFile' value='view'>View</button>
+    <button type="submit" name='actionFile' value='remove'>Remove</button>
+    <button type="submit" name='actionFile' value='download'>Download</button>
+</form>
+<p><a href={{ url_for('index') }}>Back</a></p>
+</body>
+</html>
+
