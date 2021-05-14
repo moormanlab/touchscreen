@@ -80,11 +80,11 @@ class BaseProtocol(object):
     
     def setLogFile(self,filename):
         import datetime, os
-        oldfile = self._logHdlr.baseFilename
-        logPath = os.path.dirname(oldfile)
+        oldlogfile = self._logHdlr.baseFilename
+        logPath = os.path.dirname(oldlogfile)
         self._logHdlr.close()
-        # maybe delete old file
-        #os.remove(oldlog)
+        #delete old file
+        os.remove(oldlogfile)
 
         #preparing log filename
         now = datetime.datetime.now().strftime('%Y%m%d-%H%M')

@@ -41,7 +41,7 @@ white = (255,255,255)
 class testingTouch(Protocol):
     def init(self):
         self.sensor.setHandler(self.sensorHandler)
-        self.valve.setOpenTime(.05)
+        self.valve.setOpenTime(.03)
         self.pressed = False
         self.lastposition = 0
         self.log('Test Started')
@@ -60,7 +60,7 @@ class testingTouch(Protocol):
             self.sound.play(frec=440,duration=.2)
             self.log('Valve drop, giving reward')
             self.valve.drop()
-            self.log('pointer down')
+            self.log('pointer pressed at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
         elif event.type == POINTERMOTION:
             self.lastposition = event.position
@@ -69,7 +69,7 @@ class testingTouch(Protocol):
         elif event.type == POINTERRELEASED:
             self.pressed = False
             self.lastposition = 0
-            self.log('pointer released')
+            self.log('pointer released at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
     def sensorHandler(self):
         self.log('Decide what to do when the IRbeam was broken')
