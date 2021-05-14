@@ -2,39 +2,42 @@ import pygame
 import time
 import logging
 
+SCREENWIDTH  = 800
+SCREENHEIGHT = 480
+CLOSINGBOXSIZE = 40
 logger = logging.getLogger('retMenu')
 
-def return_to_menu(event,screen, color = (255,0,0)):
-    if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-        # Draws invisible box in top right corner to return to menu
-        closing_box = pygame.draw.rect(screen, (0,0,0), (0,0, 40, 40))
-        # Checks if screen was pressed in top right corner
-        curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
-        # Time elapsed since corner was pressed
-        startTime = time.time()
-        elapsed = 0
-        # Checks time elapsed every second and closes program once 2 seconds have passed
-        while curs_in_box:
-            pygame.draw.rect(screen, color, (0, 0, 40, 40))
-            pygame.display.update()
+def return_to_menu(event):
+    try:
+        closing = return_to_menu.closing
+    except AttributeError:
+        return_to_menu.closing = False
+        logger.debug('First use of return_to_menu function. Setting closing variable')
 
-            if elapsed > 5:
-                return True
-            # If corner is no longer being pressed, the loop breaks
-            elif mouse_event_type() == False:
-                break
-            time.sleep(.2)
-            elapsed = time.time() - startTime
-            logger.debug('Top right corner pressed. Number of seconds elapsed: {:.2f}'.format(elapsed))
-            curs_in_box = closing_box.collidepoint(pygame.mouse.get_pos())
+    if event.type in [pygame.MOUSEBUTTONDOWN, event.type == pygame.FINGERDOWN] and closing==False:
+        logger.debug('Entering Closing step 1. Closing State = {}'.format(closing))
+        position = getPosition(event)
+        logger.debug(position)
+        # Checks if screen was pressed in top right corner
+        if (position[0] >= 0 and position[0] <= CLOSINGBOXSIZE) and position[1] >= 0 and position[1] <= CLOSINGBOXSIZE:
+            return_to_menu.closing = True
+            logger.debug('Hit closing area. new closing value {}'.format(not closing))#Top right corner pressed. Number of seconds elapsed: {:.2f}'.format(elapsed))
+    elif event.type in [pygame.MOUSEBUTTONUP, event.type == pygame.FINGERUP] and closing==True:
+        logger.debug('Entering Closing step 2. Closing State = {}'.format(closing))
+        return_to_menu.closing = False
+        position = getPosition(event)
+        logger.debug(position)
+        # Checks if screen was pressed in top right corner
+        if (position[0] >= SCREENWIDTH-CLOSINGBOXSIZE and position[0] <= SCREENWIDTH) and position[1] >= 0 and position[1] <= CLOSINGBOXSIZE:
+            logger.debug('Hit closing area 2. new closing value {}'.format(not closing))#Top right corner pressed. Number of seconds elapsed: {:.2f}'.format(elapsed))
+            return True
         
     return False
 
-def mouse_event_type():
-    for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION or \
-           event.type == pygame.FINGERDOWN or event.type == pygame.FINGERMOTION:
-            return True
-        else:
-            logger.debug(event)
-            return False
+def getPosition(event):
+    if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP]:
+        return event.pos
+    elif event.type in [pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP]:
+        return(int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
+    return (-1,-1)
+

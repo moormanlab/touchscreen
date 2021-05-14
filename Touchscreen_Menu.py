@@ -368,7 +368,7 @@ def subject_ID():
                 text = font.render('Enter', True, (182, 183, 184), (59, 56, 54))
 
 
-            running = not return_to_menu(event,screen, color = (20, 100, 100))
+            running = not return_to_menu(event)
 
         keyboard.update(events)
         rects = keyboard.draw(screen)

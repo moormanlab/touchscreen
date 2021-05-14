@@ -177,7 +177,6 @@ class Protocol(BaseProtocol):
 
                 if tEvent.type:
                     self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
-                    logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
 
                 # only on PC
                 if event.type == KEYDOWN: #escape from program
@@ -187,7 +186,7 @@ class Protocol(BaseProtocol):
                 elif event.type == pygame.QUIT:
                     return
 
-                if return_to_menu(event,self.surface):
+                if return_to_menu(event):
                     return
 
                 self.main(tEvent)

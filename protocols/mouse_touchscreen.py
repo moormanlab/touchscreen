@@ -109,7 +109,7 @@ class behavioral_test_base(BaseProtocol):
                 elif event.type == pygame.QUIT:
                         return
             
-                running = not return_to_menu(event,screen)
+                running = not return_to_menu(event)
 
         # Done! Time to quit.
         logger.info('Training Ended')
