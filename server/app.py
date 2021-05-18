@@ -1,4 +1,5 @@
 from flask import Flask, render_template, flash, request, redirect, url_for, send_file, send_from_directory, Response
+from markupsafe import escape
 import os
 #from flask_uploads import UploadSet, configure_uploads
 
@@ -149,7 +150,7 @@ def viewlogf(filename):
             while True:
                 lines=f.readlines()
                 for line in lines:
-                    yield str(line) + '<br/>\n'
+                    yield  str(escape(line)) + '<br/>\n'
                 time.sleep(5)
     return Response(inner(), mimetype='text/html')
     

@@ -21,3 +21,5 @@ mkdir ~/.config/autostart
 cp ~/touchscreen/touch.desktop ~/.config/autostart
 reboot
 ```
+
+https://www.raspberrypi.org/documentation/remote-access/vnc/
