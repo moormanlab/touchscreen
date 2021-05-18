@@ -1,0 +1,17 @@
+<!doctype html>
+<head>
+<link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}" />
+<title>Log viewer</title>
+</head>
+
+<h1>Log Viewer</h1>
+
+<p> Filename: {{d.filename}} </p> 
+
+<body>
+    <div>
+        <iframe frameborder="0" noresize="noresize"
+     style='background: transparent; width: 100%; height:100%;' src="{{ url_for('viewlogf', filename=d.filename)}}"></iframe>
+    </div>
+</body>
+

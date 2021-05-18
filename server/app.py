@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash, request, redirect, url_for, send_file, send_from_directory
+from flask import Flask, render_template, flash, request, redirect, url_for, send_file, send_from_directory, Response
 import os
 #from flask_uploads import UploadSet, configure_uploads
 
@@ -64,10 +64,11 @@ def make_tree_log(path):
             if os.path.isfile(fn) and os.path.splitext(fn)[1]=='.log':
                 size = os.path.getsize(os.path.abspath(fn))
                 sizestr = size_to_str(size)
+                val = os.access(fn,os.W_OK)
                 if fname.split(sep='-')[-1] == 'system.log':
-                    system['children'].append(dict(name=fname,size=sizestr))
+                    system['children'].append(dict(name=fname,size=sizestr,val=val))
                 else:
-                    protocols['children'].append(dict(name=fname,size=sizestr))
+                    protocols['children'].append(dict(name=fname,size=sizestr,val=val))
     return protocols, system
 
 
@@ -126,7 +127,7 @@ def logmanager():
             elif request.form['actionFile'] == 'view':
                 filename = request.form['file']
                 assert os.path.isfile(os.path.join(path,filename))
-                #### TODO design log viewer
+                return render_template('viewlog.html',d=dict(filename=filename))
             elif request.form['actionFile'] == 'download':
                 filename = request.form['file']
                 fullpath = os.path.join(os.path.abspath(path),filename)
@@ -138,6 +139,35 @@ def logmanager():
     ptree,stree = make_tree_log(LOGPATH)
     return render_template('logmanager.html', ptree=ptree,stree=stree)
 
+import math, time
+@app.route('/viewlogf/<filename>')
+def viewlogf(filename):
+    path = os.path.expanduser(LOGPATH)
+    def inner():
+        # simulate a long process to watch
+        with open(os.path.join(path,filename), 'r') as f:
+            while True:
+                lines=f.readlines()
+                for line in lines:
+                    yield str(line) + '<br/>\n'
+                time.sleep(5)
+    return Response(inner(), mimetype='text/html')
+    
+#@app.route('/viewlog2')
+#def viewlog2():
+#    def inner():
+#        # simulate a long process to watch
+#        for i in range(500):
+#            j = math.sqrt(i)
+#            time.sleep(1)
+#            # this value should be inserted into an HTML template
+#            yield str(i) + '<br/>\n'
+#    return Response(inner(), mimetype='text/html')
+#
+#@app.route('/viewlog/<filename>')
+#def viewlog(filename):
+#    d = dict(filename=filename)
+#    return render_template('viewlog.html',d=d)
 
 
 @app.route('/editor/<filename>')
@@ -155,4 +185,6 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
+    import os
+    os.environ['FLASK_ENV'] = 'development'
     app.run(debug=True, host='0.0.0.0')

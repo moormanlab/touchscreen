@@ -2,6 +2,7 @@
 <html lang=en>
 <head>
 <meta charset=utf-8>
+<link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}" />
 <title>Log Manager</title>
 </head>
 <body>
@@ -22,7 +23,7 @@
 <form method=POST enctype=multipart/form-data action="{{ url_for('logmanager') }}">
 {%- for item in ptree.children recursive %}
   <input type="radio" name="file" value="{{ item.name }}">
-  <label for="{{ item }}">{{ item.name }}   {{ item.size }}</label><br>
+  <label for="{{ item }}">{{ item.name }}  |  {{ item.size }} | {{ item.val }}</label><br>
 {%- endfor %}
     <button type="submit" name='actionFile' value='view'>View</button>
     <button type="submit" name='actionFile' value='remove'>Remove</button>
@@ -34,7 +35,7 @@
 <form method=POST enctype=multipart/form-data action="{{ url_for('logmanager') }}">
 {%- for item in stree.children recursive %}
   <input type="radio" name="file" value="{{ item.name }}">
-  <label for="{{ item.name }}">{{ item.name }}   {{ item.size }}</label><br>
+  <label for="{{ item }}">{{ item.name }}  |  {{ item.size }} | {{ item.val }}</label><br>
 {%- endfor %}
     <button type="submit" name='actionFile' value='view'>View</button>
     <button type="submit" name='actionFile' value='remove'>Remove</button>

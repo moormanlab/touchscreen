@@ -27,6 +27,7 @@ touchDBFile = 'touchDB.json'
 touchDB = tinydb.TinyDB(touchDBFile)
 #hardware_initialized = False
 
+SERVERPORT = 5001
 
 def add_back_button(menu):
     menu.add.vertical_margin(30)
@@ -527,7 +528,7 @@ def settings_menu(surface):
     table = touchDB.table('settings')
 
     def updateIP(Label, menu):
-        Label.set_title('Ip : {}'.format(showip.getip()))
+        Label.set_title('IP : {} | Port : {}'.format(showip.getip(),SERVERPORT))
 
     IPLabel = sMenu.add.label('Ip')
     IPLabel.add_draw_callback(updateIP)
@@ -737,7 +738,8 @@ def main_menu():
 
     initialize_logging()
 
-    t1=threading.Thread(target=app.run,kwargs={'debug':False,'use_reloader':False,'host':'0.0.0.0','port':'5001'},daemon=True)
+    os.environ['FLASK_ENV'] = 'development'
+    t1=threading.Thread(target=app.run,kwargs={'debug':False,'use_reloader':False,'host':'0.0.0.0','port':str(SERVERPORT)},daemon=True)
     t1.start()
 
     logger.debug('Running in Raspberry PI = {}'.format(isRaspberryPI()))
