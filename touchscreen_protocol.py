@@ -8,17 +8,20 @@ POINTERPRESSED = 1
 POINTERMOTION = 2
 POINTERRELEASED = 3
 
+SCREENWIDTH  = 800
+SCREENHEIGHT = 480
+
 tsColors = {
-        'red': (255,0,0),
-        'green': (0,255,0),
-        'blue': (0,0,255),
-        'black': (0,0,0),
-        'yellow': (255,255,0),
-        'purple': (255,0,255),
-        'white': (255,255,255),
-        'deepskyblue': (0,191,255),
-        'gray': (128,128,128),
-        'darkgray': (64, 64, 64),
+        'red':         ( 255,   0,   0),
+        'green':       (   0, 255,   0),
+        'blue':        (   0,   0, 255),
+        'black':       (   0,   0,   0),
+        'yellow':      ( 255, 255,   0),
+        'purple':      ( 255,   0, 255),
+        'white':       ( 255, 255, 255),
+        'deepskyblue': (   0, 191, 255),
+        'gray':        ( 128, 128, 128),
+        'darkgray':    (  64,  64,  64),
         }
 
 class tsEvent(object):
@@ -83,8 +86,6 @@ class BaseProtocol(object):
         oldlogfile = self._logHdlr.baseFilename
         logPath = os.path.dirname(oldlogfile)
         self._logHdlr.close()
-        #delete old file
-        os.remove(oldlogfile)
 
         #preparing log filename
         now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
@@ -96,6 +97,10 @@ class BaseProtocol(object):
         logger.info('Changing log file to {}'.format(self._logfile))
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.addHandler(self._logHdlr)
+        #delete old file
+        if os.path.isfile(oldlogfile):
+            logger.debug('Removing old log file to {}'.format(oldlogfile))
+            os.remove(oldlogfile)
 
     def log(self,string):
         self.logger.info(string)
@@ -133,20 +138,20 @@ class Protocol(BaseProtocol):
             return self.surface.fill(self.backcolor)
 
 
-    def __init__(self,surface,subject=None,experimenter=None,backcolor=(0,0,0)):
+    def __init__(self,surface,subject=None,experimenter=None,backcolor=tsColors['black']):
         BaseProtocol.__init__(self,surface,subject,experimenter)
         self.screen = Protocol.Screen(surface)
         self.draw = shapes.Draw(surface)
         self.backcolor = backcolor
         self._type = 'Protocol'
+        self._exit = False
 
     def _run(self):
-        self.surface.fill((0,0,0))
+        self.surface.fill(self.backcolor)
         pygame.display.flip()
         logger.info('Start running protocol {}'.format(self.__class__.__name__))
-        running = True
         pressed = False
-        while running:
+        while not self._exit:
             events = pygame.event.get()
             if events:
               for event in events:
@@ -158,21 +163,21 @@ class Protocol(BaseProtocol):
                     pressed = True
                 elif event.type == pygame.FINGERDOWN:
                     tEvent.type = POINTERPRESSED
-                    tEvent.position = (int(event.x*800),int(event.y*480))
+                    tEvent.position = (int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
                     pressed = True
                 elif event.type == pygame.MOUSEMOTION and pressed:
                     tEvent.type = POINTERMOTION
                     tEvent.position = event.pos
                 elif event.type == pygame.FINGERMOTION and pressed:
                     tEvent.type = POINTERMOTION
-                    tEvent.position = (int(event.x*800),int(event.y*480))
+                    tEvent.position = (int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
                 elif event.type == pygame.MOUSEBUTTONUP:
                     tEvent.type = POINTERRELEASED
                     tEvent.position = event.pos
                     pressed = False
                 elif event.type == pygame.FINGERUP:
                     tEvent.type = POINTERRELEASED
-                    tEvent.position = (int(event.x*800),int(event.y*480))
+                    tEvent.position = (int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
                     pressed = False
 
                 if tEvent.type:
@@ -193,6 +198,7 @@ class Protocol(BaseProtocol):
             else:
                 self.main(tsEvent())
 
+
     def _end(self):
         logger.info('End running protocol {}'.format(self.__class__.__name__))
         self.end()
@@ -204,3 +210,5 @@ class Protocol(BaseProtocol):
         import time
         time.sleep(sleeptime)
 
+    def quit(self):
+        self._exit = True

@@ -1,16 +1,25 @@
 from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED
 import touchscreen_protocol as ts
 
-class test_1(BaseProtocol):
+red = (255,0,0)
+
+class Test1(BaseProtocol):
+    '''
+    This example Test protocol, based in the class 'BaseProtocol'
+    requires use of pygame library
+    It should control the main loop and the surface at all time.
+
+    In the example when the pointer collides with the box it will end the training
+    '''
+
     def init(self):
-        self.setLogFile('Example')
+        self.setLogFile('Example Test 1')
 
     def main(self):
         import pygame
-        #print('Base Main')
         running = True
         self.surface.fill((0,0,0))
-        obj1 = pygame.draw.rect(self.surface, (255,0,0), (500,200, 100,100))
+        obj1 = pygame.draw.rect(self.surface, color=red, rect=(500,200, 100,100))
         pygame.display.flip()
         while running:
             for event in pygame.event.get():
@@ -23,22 +32,36 @@ class test_1(BaseProtocol):
                     if obj1.collidepoint(position):
                         running = False
 
-
-class test_2(Protocol):
+class Test2(Protocol):
+    '''
+    This example test protocol, based in the class 'Protocol' has the same functionality
+    than test_1, but using the advantages of the Protocol class.
+    The main difference is that the main function must not use a while loop.
+    Instead it should include only the code for one single loop cycle and it will
+    be continusly called from the protocol manager.
+    '''
     def init(self):
-        self.log('this message will get lost in old log file')
+        #self.log('This message will get lost in old log file')
         self.setLogFile('Example test 2')
-        self.log('start test_2 with new logging file')
+        self.log('Start training Test2 with new logging file')
 
     def main(self,event):
-        if event.type == POINTERPRESSED:
-            self.log(event)
+        rect1=self.draw.rect(color=red, start=(500,200), size=(100,100))
+        self.screen.update()
+        if event.type:
+            if rect1.collidepoint(event.position):
+                self.quit()
 
     def end(self):
-        self.log('end testing test_2')
+        self.log('End training Test2')
 
 white = (255,255,255)
-class testingTouch(Protocol):
+class TestingTouch(Protocol):
+    '''
+        This training protocol will deliver reward anytime the mouse touches the screen.
+        A small circle is drawn where there is an interaction with the screen.
+        This protocol only ends using the built in quiting procedure: touch in the upper left corner and slide up the upper right corner.
+    '''
     def init(self):
         self.sensor.setHandler(self.sensorHandler)
         self.valve.setOpenTime(.03)

@@ -18,6 +18,9 @@ logPath = os.path.abspath('logs')
 protocolsPath = 'protocols'
 userLogHdlr = None
 
+SCREENWIDTH  = 800
+SCREENHEIGHT = 480
+
 def back_button(menu):
     menu.add.vertical_margin(30)
     menu.add.button('Back', pygame_menu.events.BACK)
@@ -300,13 +303,13 @@ def settings_menu(surface):
 
 
 def create_surface():
-    # Creates surface width=800, height=480
+    # Creates surface
     # make fullscreen on touchscreen
     if isRaspberryPI():
-        surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+        surface = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), pygame.FULLSCREEN)
         pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
     else:
-        surface = pygame.display.set_mode((800,480))
+        surface = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
     
     return surface
 
@@ -422,12 +425,15 @@ def initial_buttons(menu, surface):
 
 def initialize_menu(title):
     # Creates menu, adding title, and enabling touchscreen mode
-    menu = pygame_menu.Menu(title, 800,480,
-                            theme=pygame_menu.themes.THEME_DARK,
-                            onclose=pygame_menu.events.RESET,
-                            touchscreen=True if isRaspberryPI() else False,
-                            joystick_enabled=False,
-                            mouse_enabled = False if isRaspberryPI() else True)
+    menu = pygame_menu.Menu(title, SCREENWIDTH, SCREENHEIGHT,
+                            theme = pygame_menu.themes.THEME_DARK,
+                            onclose = pygame_menu.events.RESET,
+                            touchscreen = True if isRaspberryPI() else False,
+                            joystick_enabled = False,
+                            mouse_enabled = False if isRaspberryPI() else True,
+                            )
+
+    logger.debug('Menu created: {}'.format(title))
     
     return menu
 
