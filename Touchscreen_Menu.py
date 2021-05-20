@@ -8,10 +8,10 @@ from importlib import import_module
 from importlib import reload as reload_module
 import inspect
 import datetime
-import pygame_vkeyboard as vkboard
+from keyboard import keyboard
 from return_to_menu import return_to_menu
 import time
-from fontTools.ttLib import TTFont
+#from fontTools.ttLib import TTFont
 
 logger = logging.getLogger('TouchMenu')
 logPath = os.path.abspath('logs')
@@ -328,62 +328,12 @@ def file_menu(surface=create_surface()):
     pMenu.mainloop(surface)
 
 
-def subject_ID():
-    screen = create_surface()
-    screen.fill((20, 100, 100))
+def subject_ID(surface):
 
-    # Create keyboard
-    keys = ['1234567890','qwertyuiop','asdfghjkl','.-zxcvbnm_/']
-    layout = vkboard.VKeyboardLayout(keys, allow_special_chars=False)
-    keyboard = vkboard.VKeyboard(screen,
-                                 on_key_event,
-                                 layout,
-                                 renderer=vkboard.VKeyboardRenderer.DARK,
-                                 show_text=True,
-                                 joystick_navigation=True)
+    subject = keyboard(surface)
 
-    font = pygame.font.Font('DejaVuSans.ttf', 40)
-    enter_text = 'Enter'
-    text = font.render(enter_text,True, (182, 183, 184), (59, 56, 54))
-    enter_key = text.get_rect()
-    enter_key.topleft = (670,320)
-    #outline = pygame.draw.rect(text, (124, 183, 62), enter_key,3)
-
-    running = True
-
-    # Main loop
-    while running:
-        events = pygame.event.get()
-
-        for event in events:
-            if event.type == pygame.QUIT:
-                exit()
-
-            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-                enter_pressed = enter_key.collidepoint(pygame.mouse.get_pos())
-                if enter_pressed:
-                    text = font.render('Enter', True, (255,255,255), (47,48,51))
-                    input = keyboard.get_text()
-                    print(input)
-                    subject_logging(input)
-
-            else:
-                text = font.render('Enter', True, (182, 183, 184), (59, 56, 54))
-
-
-            running = not return_to_menu(event)
-
-        keyboard.update(events)
-        rects = keyboard.draw(screen)
-
-        screen.blit(text, enter_key)
-        pygame.display.update(rects)
-        pygame.display.update(enter_key)
-        #pygame.display.update(outline)
-    
-def subject_logging(input):
-    logger = logging.getLogger('SubjectID')
-    logger.info('ID: ' + input)
+    if subject != '':
+        print(subject)
 
 
 def initialize_logging():
@@ -437,9 +387,6 @@ def initialize_menu(title):
     
     return menu
 
-def on_key_event(text):
-    """ Print the current text. """
-    print('Current text:', text)
 
 def main():
     # Initializes pygame and logging
