@@ -1,17 +1,17 @@
 #!/usr/bin/python3
 import pygame, pygame_menu
-from hal import isRaspberryPI, Valve, IRSensor, Buzzer
 import logging
-import showip
 import os, subprocess
 from importlib import import_module
 from importlib import reload as reload_module
 import inspect
 import datetime
+import time
+
+import showip
 from keyboard import keyboard
 from return_to_menu import return_to_menu
-import time
-#from fontTools.ttLib import TTFont
+from hal import isRaspberryPI, Valve, IRSensor, Buzzer
 
 logger = logging.getLogger('TouchMenu')
 logPath = os.path.abspath('logs')
@@ -21,25 +21,33 @@ userLogHdlr = None
 SCREENWIDTH  = 800
 SCREENHEIGHT = 480
 
+DEFAULTITEMS  = [('No Name','No Name')]
+
+
 def back_button(menu):
     menu.add.vertical_margin(30)
     menu.add.button('Back', pygame_menu.events.BACK)
+
 
 def close_button(menu):
     menu.add.vertical_margin(30)
     menu.add.button('Back', pygame_menu.events.CLOSE)
 
-# Scans directory for relevent python files and returns the file names as an array
-def scan_directory():
-    # List of file names in directory
-    files = []
 
-    # Goes through each file and checks if they are python files
-    for filename in os.listdir(protocolsPath):
-        if filename.endswith('.py'):
-            files.append(filename)
+def initialize_menu(title):
+    # Creates menu, adding title, and enabling touchscreen mode
+    menu = pygame_menu.Menu(title, SCREENWIDTH, SCREENHEIGHT,
+                            theme = pygame_menu.themes.THEME_DARK,
+                            onclose = pygame_menu.events.RESET,
+                            touchscreen = True if isRaspberryPI() else False,
+                            joystick_enabled = False,
+                            mouse_enabled = False if isRaspberryPI() else True,
+                            )
 
-    return files
+    logger.debug('Menu created: {}'.format(title))
+    
+    return menu
+
 
 def import_protocols(filename):
     # Imports file as a module (excludes .py extension)
@@ -55,6 +63,7 @@ def import_protocols(filename):
         classes = []
 
     return classes
+
 
 def protocol_run(protocol, surface, data):
 
@@ -109,6 +118,37 @@ def function_menu(filename,data,surface):
     fMenu.mainloop(surface)
 
 
+def scan_directory(dirPath):
+    # Scans directory for relevent python files and returns the file names as an array
+    # List of file names in directory
+    files = []
+
+    # Goes through each file and checks if they are python files
+    for filename in os.listdir(dirPath):
+        if filename.endswith('.py'):
+            files.append(filename)
+
+    return files
+
+
+def files_menu(data, surface):
+    # Retrieves test files
+    files = scan_directory(protocolsPath)
+    # Creates new sub menu
+    pMenu = initialize_menu('Programs')
+    subject = data['subject'][0][0]
+    experimenter = data['experimenter'][0][0]
+    
+    pMenu.add.label('Subject: {} | Experimenter: {}'.format(subject,experimenter))
+    pMenu.add.vertical_margin(20)
+    for filename in files:
+        pMenu.add.button(filename, function_menu, filename, (subject, experimenter), surface)
+    
+    close_button(pMenu)
+
+    pMenu.mainloop(surface)
+
+
 def shutdown_pi_menu():
 
     def shutdown_pi():
@@ -156,7 +196,7 @@ def valve_menu():
         otime = valve.getOpenTime()
         otime = otime - .01
         if otime > 0:
-         valve.setOpenTime(otime)
+            valve.setOpenTime(otime)
 
     L1=vMenu.add.label('State:          Drop Open Time:     ms')
     vMenu.add.vertical_margin(20)
@@ -316,41 +356,6 @@ def create_surface():
     return surface
 
 
-def files_menu(data, surface):
-    # Retrieves test files
-    files = scan_directory()
-    # Creates new sub menu
-    pMenu = initialize_menu('Programs')
-    subject = data['subject'][0][0]
-    experimenter = data['experimenter'][0][0]
-    
-    pMenu.add.label('Subject: {} | Experimenter: {}'.format(subject,experimenter))
-    pMenu.add.vertical_margin(20)
-    for filename in files:
-        pMenu.add.button(filename, function_menu, filename, (subject, experimenter), surface)
-    
-    close_button(pMenu)
-
-    pMenu.mainloop(surface)
-
-DEFAULTITEMS  = [('No Name','No Name')]
-subjects      = DEFAULTITEMS.copy()
-experimenters = DEFAULTITEMS.copy()
-
-def updateItems(selector, items, surface):
-
-    subject = keyboard(surface)
-
-    if subject != '':
-        #global subjectss
-        items.append((subject,subject))
-        selector.update_items(items)
-        selector.make_selection_drop()
-
-def clearItems(selector):
-    selector.update_items(DEFAULTITEMS)
-    selector.make_selection_drop()
-    print(selector._items)
 
 def initialize_logging():
     # Initialize logging 
@@ -382,22 +387,7 @@ def initialize_logging():
     logger.info('Logging initialized')
 
 
-def initialize_menu(title):
-    # Creates menu, adding title, and enabling touchscreen mode
-    menu = pygame_menu.Menu(title, SCREENWIDTH, SCREENHEIGHT,
-                            theme = pygame_menu.themes.THEME_DARK,
-                            onclose = pygame_menu.events.RESET,
-                            touchscreen = True if isRaspberryPI() else False,
-                            joystick_enabled = False,
-                            mouse_enabled = False if isRaspberryPI() else True,
-                            )
-
-    logger.debug('Menu created: {}'.format(title))
-    
-    return menu
-
-
-def main():
+def main_menu():
     # Initializes pygame and logging
     pygame.init()
     initialize_logging()
@@ -409,26 +399,41 @@ def main():
     
     menu = initialize_menu('Mouse Touchscreen Menu')
 
-    #def update_subjItems(selector,menu):
-    #    global subjItems
-        #print(selector._items)
-        #selector.update_items(subjItems)
+    def updateItems(selector, surface):
+        subject = keyboard(surface)
+        sid = selector.get_id()
+
+        if subject != '':
+            #global subjectss
+            items = selector._items
+            items.append((subject,subject))
+            selector.update_items(items)
+            selector.make_selection_drop()
+
+    def clearItems(selector):
+        items = DEFAULTITEMS.copy()
+        selector.update_items(items)
+        selector.make_selection_drop()
+
+    def run_files_menu(menu, surface):
+        data = menu.get_input_data()
+        files_menu(data, surface)
 
     # Creates initial buttons
     frameS = menu.add.frame_h(600,58)
-    S1 = menu.add.dropselect('Subject Id', items=subjects, default=0, dropselect_id='subject', placeholder='SelectSelect', placeholder_add_to_selection_box = False)
+    S1 = menu.add.dropselect('Subject Id', items=DEFAULTITEMS.copy(), default=0, dropselect_id='subject', placeholder='SelectSelect', placeholder_add_to_selection_box = False)
     frameS.pack(S1)
-    frameS.pack(menu.add.button('New', updateItems, S1, subjects, surface))
+    frameS.pack(menu.add.button('New', updateItems, S1, surface))
     frameS.pack(menu.add.button('Clear', clearItems, S1))
 
     frameE = menu.add.frame_h(660,58)
-    S2 = menu.add.dropselect('Experimenter Id', items=experimenters, default=0, dropselect_id='experimenter', placeholder='SelectSelect', placeholder_add_to_selection_box = False) 
+    S2 = menu.add.dropselect('Experimenter Id', items=DEFAULTITEMS.copy(), default=0, dropselect_id='experimenter', placeholder='SelectSelect', placeholder_add_to_selection_box = False) 
     frameE.pack(S2)
-    frameE.pack(menu.add.button('New', updateItems, S2, experimenters, surface))
+    frameE.pack(menu.add.button('New', updateItems, S2, surface))
     frameE.pack(menu.add.button('Clear', clearItems, S2))
 
     menu.add.vertical_margin(10)
-    menu.add.button('Protocols', files_menu, menu.get_input_data(), surface)
+    menu.add.button('Protocols', run_files_menu, menu, surface)
     menu.add.vertical_margin(40)
     menu.add.button('Settings', settings_menu,surface)
 
@@ -440,5 +445,5 @@ def main():
     return
 
 if __name__ == "__main__":
-    main()
+    main_menu()
     

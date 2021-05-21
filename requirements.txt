@@ -4,4 +4,3 @@ pygame-menu>=4.0.6
 gpiozero>=1.6.2
 rpi.gpio>=0.7.0
 pygame-vkeyboard>=2.0.8
-fontTools>=4.22
