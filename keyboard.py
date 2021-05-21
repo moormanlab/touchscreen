@@ -2,7 +2,6 @@ import pygame
 from pygame_vkeyboard import vkeys
 from pygame_vkeyboard import vkeyboard as vkb
 
-import time
 
 class VEnterKey(vkeys.VActionKey):
     """Action key for the uppercase switch. """
@@ -332,8 +331,12 @@ def keyboard(screen):
                                  renderer = cRendererd)
 
     # Main loop
+    clock = pygame.time.Clock()
+
     while keyboard.state:
-        time.sleep(.1)
+
+        clock.tick(100)
+
         events = pygame.event.get()
 
         keyboard.update(events)

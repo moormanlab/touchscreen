@@ -7,6 +7,7 @@ from importlib import reload as reload_module
 import inspect
 import datetime
 import time
+import tinydb
 
 import showip
 from keyboard import keyboard
@@ -17,11 +18,10 @@ logger = logging.getLogger('TouchMenu')
 logPath = os.path.abspath('logs')
 protocolsPath = 'protocols'
 userLogHdlr = None
+touchDBFile = 'touchDB.json'
 
 SCREENWIDTH  = 800
 SCREENHEIGHT = 480
-
-DEFAULTITEMS  = [('No Name','No Name')]
 
 
 def back_button(menu):
@@ -387,6 +387,18 @@ def initialize_logging():
     logger.info('Logging initialized')
 
 
+def dbGetAll(subjectType):
+
+    touchDB = tinydb.TinyDB(touchDBFile)
+    table = touchDB.table(subjectType)
+
+    A = table.all()
+    nameList = [('No Name',)]
+    for item in A:
+        nameList.append((item['name'],))
+    
+    return nameList
+
 def main_menu():
     # Initializes pygame and logging
     pygame.init()
@@ -399,19 +411,46 @@ def main_menu():
     
     menu = initialize_menu('Mouse Touchscreen Menu')
 
-    def updateItems(selector, surface):
+    def addItems(selector, surface):
         subject = keyboard(surface)
-        sid = selector.get_id()
+        sType = selector.get_id()
 
         if subject != '':
             #global subjectss
+            touchDB = tinydb.TinyDB(touchDBFile)
+            table = touchDB.table(sType)
+            if table.search(tinydb.Query().name==subject):
+                print('already there')
+            else:
+                table.insert({'name':subject})
+                items = selector._items
+                items.append((subject,))
+                selector.update_items(items)
+                selector.make_selection_drop()
+                selector._index = len(items) -1
+
+    def delItems(selector):
+        sType = selector.get_id()
+        touchDB = tinydb.TinyDB(touchDBFile)
+        table = touchDB.table(sType)
+        sValue = selector.get_value()
+        subject = sValue[0][0]
+        if subject != 'No Name':
+            print('to remove {}'.format(subject))
+            table.remove(tinydb.Query().name==subject)
             items = selector._items
-            items.append((subject,subject))
+            items.pop(items.index(sValue[0]))
+            selector._index = 0
             selector.update_items(items)
             selector.make_selection_drop()
 
     def clearItems(selector):
-        items = DEFAULTITEMS.copy()
+        sType = selector.get_id()
+        touchDB = tinydb.TinyDB(touchDBFile)
+        table = touchDB.table(sType)
+        table.truncate()
+        items = [('No Name',)]
+        selector._index = 0
         selector.update_items(items)
         selector.make_selection_drop()
 
@@ -420,19 +459,21 @@ def main_menu():
         files_menu(data, surface)
 
     # Creates initial buttons
-    frameS = menu.add.frame_h(600,58)
-    S1 = menu.add.dropselect('Subject Id', items=DEFAULTITEMS.copy(), default=0, dropselect_id='subject', placeholder='SelectSelect', placeholder_add_to_selection_box = False)
-    frameS.pack(S1)
-    frameS.pack(menu.add.button('New', updateItems, S1, surface))
-    frameS.pack(menu.add.button('Clear', clearItems, S1))
+    frameS = menu.add.frame_h(700,58)
+    S1 = menu.add.dropselect('Subject Id', items=dbGetAll('subject'), default=0, dropselect_id='subject', placeholder='Select        ', placeholder_add_to_selection_box = False)
+    frameS.pack(menu.add.button('Clear', clearItems, S1), align='align-right')
+    frameS.pack(menu.add.button('Del', delItems, S1), align='align-right')
+    frameS.pack(menu.add.button('Add', addItems, S1, surface), align='align-right')
+    frameS.pack(S1, align='align-right')
 
-    frameE = menu.add.frame_h(660,58)
-    S2 = menu.add.dropselect('Experimenter Id', items=DEFAULTITEMS.copy(), default=0, dropselect_id='experimenter', placeholder='SelectSelect', placeholder_add_to_selection_box = False) 
-    frameE.pack(S2)
-    frameE.pack(menu.add.button('New', updateItems, S2, surface))
-    frameE.pack(menu.add.button('Clear', clearItems, S2))
+    frameE = menu.add.frame_h(700,58)
+    S2 = menu.add.dropselect('Experimenter Id', items=dbGetAll('experimenter'), default=0, dropselect_id='experimenter', placeholder='Select        ', placeholder_add_to_selection_box = False) 
+    frameE.pack(menu.add.button('Clear', clearItems, S2), align='align-right')
+    frameE.pack(menu.add.button('Del', delItems, S2), align='align-right')
+    frameE.pack(menu.add.button('Add', addItems, S2, surface), align='align-right')
+    frameE.pack(S2, align='align-right')
 
-    menu.add.vertical_margin(10)
+    menu.add.vertical_margin(30)
     menu.add.button('Protocols', run_files_menu, menu, surface)
     menu.add.vertical_margin(40)
     menu.add.button('Settings', settings_menu,surface)
