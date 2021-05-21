@@ -53,15 +53,15 @@ import shapes
 
 class BaseProtocol(object):
 
-    def __init__(self,surface,subject=None,experimenter=None):
+    def __init__(self, surface, subject=None, experimenter=None):
         self._type = 'BaseProtocol'
         self.surface = surface
         self.valve = Valve()
         self.sensor = IRSensor(self.sensorHandler)
         self.sound = Buzzer()
         self._logfile = None
-        self._subject = subject
-        self._experimenter = None
+        self.subject = subject
+        self.experimenter = experimenter
         self.logger = logging.getLogger('Protocol')
     
     def _init(self,logHdlr):
@@ -138,8 +138,8 @@ class Protocol(BaseProtocol):
             return self.surface.fill(self.backcolor)
 
 
-    def __init__(self,surface,subject=None,experimenter=None,backcolor=tsColors['black']):
-        BaseProtocol.__init__(self,surface,subject,experimenter)
+    def __init__(self, surface, subject=None, experimenter=None, backcolor=tsColors['black']):
+        super().__init__(surface, subject, experimenter)
         self.screen = Protocol.Screen(surface)
         self.draw = shapes.Draw(surface)
         self.backcolor = backcolor

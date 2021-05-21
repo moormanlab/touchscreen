@@ -56,14 +56,14 @@ def import_protocols(filename):
 
     return classes
 
-def protocol_run(protocol,surface):
+def protocol_run(protocol, surface, data):
 
     global userLogHdlr
 
     logger.debug('Starting protocol {}'.format(protocol.__name__))
 
     try:
-        protoc = protocol(surface,subject_ID)
+        protoc = protocol(surface, subject = data[0], experimenter = data[1])
 
         #create new log file for protocol running
         now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
@@ -81,9 +81,9 @@ def protocol_run(protocol,surface):
     return
 
 
-def function_menu(filename,surface):
+def function_menu(filename,data,surface):
     # New function menu
-    fmenu = initialize_menu(filename)
+    fMenu = initialize_menu(filename)
 
     base_classes = ['BaseProtocol', 'Protocol']
 
@@ -91,6 +91,8 @@ def function_menu(filename,surface):
     protocols = import_protocols(filename)
 
     # Creates a button for each function
+    fMenu.add.label('Subject: {} | Experimenter: {}'.format(data[0],data[1]))
+    fMenu.add.vertical_margin(20)
     for protocol in protocols:
         protocol_name, protocol_call = protocol
 
@@ -99,12 +101,12 @@ def function_menu(filename,surface):
         else:
             for b in protocol_call.__bases__:
                 if b.__name__ in base_classes:
-                    fmenu.add.button(protocol_name, protocol_run, protocol_call, surface)
+                    fMenu.add.button(protocol_name, protocol_run, protocol_call, surface, data)
                     break
 
-    close_button(fmenu)
+    close_button(fMenu)
 
-    fmenu.mainloop(surface)
+    fMenu.mainloop(surface)
 
 
 def shutdown_pi_menu():
@@ -314,27 +316,41 @@ def create_surface():
     return surface
 
 
-def file_menu(surface=create_surface()):
+def files_menu(data, surface):
     # Retrieves test files
     files = scan_directory()
     # Creates new sub menu
     pMenu = initialize_menu('Programs')
+    subject = data['subject'][0][0]
+    experimenter = data['experimenter'][0][0]
     
+    pMenu.add.label('Subject: {} | Experimenter: {}'.format(subject,experimenter))
+    pMenu.add.vertical_margin(20)
     for filename in files:
-        pMenu.add.button(filename, function_menu, filename, surface)
+        pMenu.add.button(filename, function_menu, filename, (subject, experimenter), surface)
     
     close_button(pMenu)
 
     pMenu.mainloop(surface)
 
+DEFAULTITEMS  = [('No Name','No Name')]
+subjects      = DEFAULTITEMS.copy()
+experimenters = DEFAULTITEMS.copy()
 
-def subject_ID(surface):
+def updateItems(selector, items, surface):
 
     subject = keyboard(surface)
 
     if subject != '':
-        print(subject)
+        #global subjectss
+        items.append((subject,subject))
+        selector.update_items(items)
+        selector.make_selection_drop()
 
+def clearItems(selector):
+    selector.update_items(DEFAULTITEMS)
+    selector.make_selection_drop()
+    print(selector._items)
 
 def initialize_logging():
     # Initialize logging 
@@ -366,13 +382,6 @@ def initialize_logging():
     logger.info('Logging initialized')
 
 
-def initial_buttons(menu, surface):
-    menu.add.button('Subject ID', subject_ID)
-    menu.add.button('Protocols',file_menu, surface)
-    menu.add.vertical_margin(40)
-    menu.add.button('Settings', settings_menu,surface)
-
-
 def initialize_menu(title):
     # Creates menu, adding title, and enabling touchscreen mode
     menu = pygame_menu.Menu(title, SCREENWIDTH, SCREENHEIGHT,
@@ -400,8 +409,28 @@ def main():
     
     menu = initialize_menu('Mouse Touchscreen Menu')
 
+    #def update_subjItems(selector,menu):
+    #    global subjItems
+        #print(selector._items)
+        #selector.update_items(subjItems)
+
     # Creates initial buttons
-    initial_buttons(menu, surface)
+    frameS = menu.add.frame_h(600,58)
+    S1 = menu.add.dropselect('Subject Id', items=subjects, default=0, dropselect_id='subject', placeholder='SelectSelect', placeholder_add_to_selection_box = False)
+    frameS.pack(S1)
+    frameS.pack(menu.add.button('New', updateItems, S1, subjects, surface))
+    frameS.pack(menu.add.button('Clear', clearItems, S1))
+
+    frameE = menu.add.frame_h(660,58)
+    S2 = menu.add.dropselect('Experimenter Id', items=experimenters, default=0, dropselect_id='experimenter', placeholder='SelectSelect', placeholder_add_to_selection_box = False) 
+    frameE.pack(S2)
+    frameE.pack(menu.add.button('New', updateItems, S2, experimenters, surface))
+    frameE.pack(menu.add.button('Clear', clearItems, S2))
+
+    menu.add.vertical_margin(10)
+    menu.add.button('Protocols', files_menu, menu.get_input_data(), surface)
+    menu.add.vertical_margin(40)
+    menu.add.button('Settings', settings_menu,surface)
 
     # Allows menu to be run
     menu.mainloop(surface)
