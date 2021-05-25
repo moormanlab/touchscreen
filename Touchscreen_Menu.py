@@ -24,12 +24,12 @@ SCREENWIDTH  = 800
 SCREENHEIGHT = 480
 
 
-def back_button(menu):
+def add_back_button(menu):
     menu.add.vertical_margin(30)
     menu.add.button('Back', pygame_menu.events.BACK)
 
 
-def close_button(menu):
+def add_close_button(menu):
     menu.add.vertical_margin(30)
     menu.add.button('Back', pygame_menu.events.CLOSE)
 
@@ -113,7 +113,7 @@ def function_menu(filename,data,surface):
                     fMenu.add.button(protocol_name, protocol_run, protocol_call, surface, data)
                     break
 
-    close_button(fMenu)
+    add_close_button(fMenu)
 
     fMenu.mainloop(surface)
 
@@ -144,7 +144,7 @@ def files_menu(data, surface):
     for filename in files:
         pMenu.add.button(filename, function_menu, filename, (subject, experimenter), surface)
     
-    close_button(pMenu)
+    add_close_button(pMenu)
 
     pMenu.mainloop(surface)
 
@@ -167,7 +167,7 @@ def shutdown_pi_menu():
         msg = "Device is not a Raspberry Pi. Cannot shut down."
         confirm_menu.add.label(msg)
 
-    back_button(confirm_menu)
+    add_back_button(confirm_menu)
 
     return confirm_menu
 
@@ -178,39 +178,44 @@ def valve_menu():
 
     valve = Valve()
 
-    def updateValveStatus(Label,menu):
-        state = valve.isOpen()
-        otime = valve.getOpenTime()*1000
-        if state == True:
-            msg = 'Open'
+    def control(stateVal):
+        if stateVal == False:
+            valve.close()
         else:
-            msg = 'Closed'
-        Label.set_title('State: {:<6} | Drop open time: {:03.0f} ms'.format(msg,otime))
+            valve.open()
 
-    def increaseOT():
+    def increaseOT(Label):
         otime = valve.getOpenTime()
         otime = otime + .01
         valve.setOpenTime(otime)
+        Label.set_title('{:03.0f} ms'.format(otime*1000))
 
-    def decreaseOT():
+    def decreaseOT(label):
         otime = valve.getOpenTime()
         otime = otime - .01
         if otime > 0:
             valve.setOpenTime(otime)
+            label.set_title('{:03.0f} ms'.format(otime*1000))
+    
+    def valveDrop(switch):
+        valve.drop()
+        logger.info('set switch status')
+        switch.set_value(False)
 
-    L1=vMenu.add.label('State:          Drop Open Time:     ms')
+    T1 = vMenu.add.toggle_switch('Valve State:', False, state_text=('Closed', 'Open'), onchange=control, single_click=True)
+    vMenu.add.vertical_margin(30)
+    vMenu.add.button('Give Drop', valveDrop, T1)
     vMenu.add.vertical_margin(20)
-    L1.add_draw_callback(updateValveStatus)
-    vMenu.add.button('Open Valve', valve.open)
-    vMenu.add.button('Close Valve', valve.close)
-    vMenu.add.button('Drop Valve', valve.drop)
-    frame = vMenu.add.frame_h(400,58)
-    frame.pack(vMenu.add.label('Drop Open Time:'))
-    frame.pack(vMenu.add.button(' + ', increaseOT,border_width=2))
-    frame.pack(vMenu.add._horizontal_margin(20))
-    frame.pack(vMenu.add.button('  -  ', decreaseOT,border_width=2))
+    labelT = vMenu.add.label('{:03.0f} ms'.format(valve.getOpenTime()*1000))
+    frame = vMenu.add.frame_h(700, 58)
+    frame.pack(vMenu.add.label('Drop Open Time: '), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(labelT, align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(vMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(vMenu.add.button(' + ', increaseOT, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(vMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(vMenu.add.button('  -  ', decreaseOT, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
 
-    back_button(vMenu)
+    add_back_button(vMenu)
 
     return vMenu
 
@@ -227,20 +232,20 @@ def ir_menu():
             msg = 'Activated'
         else:
             msg = 'Not Activated'
-        Label.set_title('IR Sensor state: {:<15}'.format(msg))
+        Label.set_title('IR Sensor state: {: <15}'.format(msg))
 
     irL1 = irMenu.add.label('Status')
     irL1.add_draw_callback(updateIRsensor)
 
-    irL2 = irMenu.add.label('Last Trigger')
+    irL2 = irMenu.add.label('Last Trigger: {: <8}'.format(''))
     def sensorTestHandler():
         logger.info('Test Ir Sensor Trigger')
         now = datetime.datetime.now().strftime('%H:%M:%S')
-        irL2.set_title('Last Trigger {}'.format(now))
+        irL2.set_title('Last Trigger: {: <8}'.format(now))
 
     irSensor.setHandler(sensorTestHandler)
 
-    back_button(irMenu)
+    add_back_button(irMenu)
 
     return irMenu
 
@@ -257,41 +262,47 @@ def sound_menu():
 
     buzzer = Buzzer()
 
-    def incfrec():
+    def incfrec(label):
         params.frec = params.frec + 10.0
+        label.set_title('{:3.0f} Hz '.format(params.frec))
 
-    def decfrec():
+    def decfrec(label):
         if params.frec > 20.0:
             params.frec = params.frec - 10.0
+            label.set_title('{:3.0f} Hz '.format(params.frec))
 
-    def incduration():
+    def incduration(label):
         params.duration = params.duration + 0.1
+        label.set_title('{:2.1f} s  '.format(params.duration))
 
-    def decduration():
+    def decduration(label):
         if params.duration > .1:
             params.duration = params.duration - 0.1
-
-    def updateVal(Label,menu):
-        Label.set_title('Frequency {:3.0f} Hz | Duration {:2.1f} s'.format(params.frec,params.duration))
+            label.set_title('{:2.1f} s  '.format(params.duration))
 
     def playsnd():
         buzzer.play(params.frec,params.duration)
 
-    L1=sndMenu.add.label('')
-    L1.add_draw_callback(updateVal)
-    frameF = sndMenu.add.frame_h(400,58)
-    frameF.pack(sndMenu.add.label('Frequency: '))
-    frameF.pack(sndMenu.add.button(' + ', incfrec,border_width=2))
-    frameF.pack(sndMenu.add._horizontal_margin(20))
-    frameF.pack(sndMenu.add.button('  -  ', decfrec,border_width=2))
-    frameT = sndMenu.add.frame_h(400,58)
-    frameT.pack(sndMenu.add.label('Duration: '))
-    frameT.pack(sndMenu.add.button(' + ', incduration,border_width=2))
-    frameT.pack(sndMenu.add._horizontal_margin(20))
-    frameT.pack(sndMenu.add.button('  -  ', decduration,border_width=2))
+    labelF = sndMenu.add.label('{:3.0f} Hz'.format(params.frec))
+    frameF = sndMenu.add.frame_h(600,58)
+    frameF.pack(sndMenu.add.label('Frequency: '), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(labelF, align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.button(' + ', incfrec, labelF, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.button('  -  ', decfrec, labelF, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+
+    labelT = sndMenu.add.label('  {:2.1f} s  '.format(params.duration))
+    frameT = sndMenu.add.frame_h(600,58)
+    frameT.pack(sndMenu.add.label('  Duration:'), align = pygame_menu.locals.ALIGN_CENTER)
+    frameT.pack(labelT, align = pygame_menu.locals.ALIGN_CENTER)
+    frameT.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frameT.pack(sndMenu.add.button(' + ', incduration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) # \u2795
+    frameT.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frameT.pack(sndMenu.add.button('  -  ', decduration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) #\u2796
     sndMenu.add.button('Play Sound',playsnd)
 
-    back_button(sndMenu)
+    add_back_button(sndMenu)
 
     return sndMenu
 
@@ -339,7 +350,7 @@ def settings_menu(surface):
     sMenu.add.vertical_margin(10)
     sMenu.add.button(confirm_menu.get_title(), confirm_menu)
 
-    close_button(sMenu)
+    add_close_button(sMenu)
 
     sMenu.mainloop(surface)
 
@@ -423,26 +434,23 @@ def main_menu():
                 print('already there')
             else:
                 table.insert({'name':subject})
-                items = selector._items
+                items = selector.get_items()
                 items.append((subject,))
                 selector.update_items(items)
-                selector.make_selection_drop()
                 selector._index = len(items) -1
 
     def delItems(selector):
         sType = selector.get_id()
         touchDB = tinydb.TinyDB(touchDBFile)
         table = touchDB.table(sType)
-        sValue = selector.get_value()
-        subject = sValue[0][0]
-        if subject != 'No Name':
-            print('to remove {}'.format(subject))
+        sIdx = selector.get_index()
+        if sIdx > 0: # idx == 0 -> 'No Name'
+            subject = selector.get_value()[0][0]
+            logger.info('to remove {}'.format(subject))
             table.remove(tinydb.Query().name==subject)
-            items = selector._items
-            items.pop(items.index(sValue[0]))
-            selector._index = 0
+            items = selector.get_items()
+            items.pop(sIdx)
             selector.update_items(items)
-            selector.make_selection_drop()
 
     def clearItems(selector):
         sType = selector.get_id()
@@ -450,9 +458,7 @@ def main_menu():
         table = touchDB.table(sType)
         table.truncate()
         items = [('No Name',)]
-        selector._index = 0
         selector.update_items(items)
-        selector.make_selection_drop()
 
     def run_files_menu(menu, surface):
         data = menu.get_input_data()
@@ -479,7 +485,10 @@ def main_menu():
     menu.add.button('Settings', settings_menu,surface)
 
     # Allows menu to be run
-    menu.mainloop(surface)
+    try:
+        menu.mainloop(surface)
+    except Exception:
+        logger.exception('Exception running mainloop')
 
     logger.info('Exiting Menu')
 
