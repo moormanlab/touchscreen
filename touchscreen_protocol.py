@@ -1,31 +1,17 @@
-from hal import isRaspberryPI, Valve, IRSensor, Buzzer
 import logging
 import pygame
 
+from hal import isRaspberryPI, Valve, IRSensor, Buzzer
+from keyboard import keyboard
+from utils import POINTERPRESSED, POINTERMOTION, POINTERRELEASED, getPosition, tsColors
+from return_to_menu import return_to_menu
+import shapes
+
 logger = logging.getLogger('TouchProtocols')
 
-POINTERPRESSED = 1
-POINTERMOTION = 2
-POINTERRELEASED = 3
-
-SCREENWIDTH  = 800
-SCREENHEIGHT = 480
-
-tsColors = {
-        'red':         ( 255,   0,   0),
-        'green':       (   0, 255,   0),
-        'blue':        (   0,   0, 255),
-        'black':       (   0,   0,   0),
-        'yellow':      ( 255, 255,   0),
-        'purple':      ( 255,   0, 255),
-        'white':       ( 255, 255, 255),
-        'deepskyblue': (   0, 191, 255),
-        'gray':        ( 128, 128, 128),
-        'darkgray':    (  64,  64,  64),
-        }
 
 class tsEvent(object):
-    def __init__(self,typeEv=None,posEv=(0,0)):
+    def __init__(self,typeEv=None,posEv=(-1,-1)):
         self.type = typeEv
         self.position = posEv
 
@@ -42,13 +28,6 @@ class tsEvent(object):
             return 'PointerReleased'
         else:
             return 'None'
-
-
-from pygame.locals import (
-    K_ESCAPE, KEYDOWN
-    )
-from return_to_menu import return_to_menu
-import shapes
 
 
 class BaseProtocol(object):
@@ -124,6 +103,7 @@ class Protocol(BaseProtocol):
         def __init__(self,surface,backcolor=(0,0,0)):
             self.surface = surface
             self.backcolor = backcolor
+            self.width, self.height = surface.get_size()
 
         def setBackcolor(self,color):
             self.backcolor = color
@@ -137,56 +117,56 @@ class Protocol(BaseProtocol):
         def clean(self):
             return self.surface.fill(self.backcolor)
 
+        def get_size(self):
+            return self.width, self.height
+
+        def get_height(self):
+            return self.height
+
+        def get_width(self):
+            return self.width
+
 
     def __init__(self, surface, subject=None, experimenter=None, backcolor=tsColors['black']):
         super().__init__(surface, subject, experimenter)
-        self.screen = Protocol.Screen(surface)
+        self.screen = Protocol.Screen(surface,backcolor)
         self.draw = shapes.Draw(surface)
-        self.backcolor = backcolor
+        #self.backcolor = backcolor
         self._type = 'Protocol'
         self._exit = False
+        self._fps = 60
 
     def _run(self):
-        self.surface.fill(self.backcolor)
-        pygame.display.flip()
+        self.screen.clean()
+        self.screen.update()
         logger.info('Start running protocol {}'.format(self.__class__.__name__))
         pressed = False
+        clock = pygame.time.Clock()
         while not self._exit:
+            clock.tick(self._fps)
             events = pygame.event.get()
             if events:
               for event in events:
                 logger.debug(event)
                 tEvent = tsEvent()
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                tEvent.position = getPosition(event)
+
+                if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
                     tEvent.type = POINTERPRESSED
-                    tEvent.position = event.pos
                     pressed = True
-                elif event.type == pygame.FINGERDOWN:
-                    tEvent.type = POINTERPRESSED
-                    tEvent.position = (int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
-                    pressed = True
-                elif event.type == pygame.MOUSEMOTION and pressed:
+                elif event.type in [pygame.MOUSEMOTION, pygame.FINGERMOTION] and pressed:
                     tEvent.type = POINTERMOTION
-                    tEvent.position = event.pos
-                elif event.type == pygame.FINGERMOTION and pressed:
-                    tEvent.type = POINTERMOTION
-                    tEvent.position = (int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
-                elif event.type == pygame.MOUSEBUTTONUP:
+                elif event.type in [pygame.MOUSEBUTTONUP, pygame.FINGERUP]:
                     tEvent.type = POINTERRELEASED
-                    tEvent.position = event.pos
-                    pressed = False
-                elif event.type == pygame.FINGERUP:
-                    tEvent.type = POINTERRELEASED
-                    tEvent.position = (int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
                     pressed = False
 
                 if tEvent.type:
                     self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
 
                 # only on PC
-                if event.type == KEYDOWN: #escape from program
+                if event.type == pygame.KEYDOWN: #escape from program
                     # Was it the Escape key? If so, stop the loop.
-                    if event.key == K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE:
                         return
                 elif event.type == pygame.QUIT:
                     return
@@ -212,3 +192,12 @@ class Protocol(BaseProtocol):
 
     def quit(self):
         self._exit = True
+
+    def setMaxFPS(self, fps: int):
+        #assert isinstance(fps, int)
+        self._fps = fps
+
+    def setNote(self):
+        note = keyboard(self.surface)
+        if note != '':
+            self.log('Note: {}'.format(note))

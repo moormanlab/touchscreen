@@ -13,15 +13,14 @@ import showip
 from keyboard import keyboard
 from return_to_menu import return_to_menu
 from hal import isRaspberryPI, Valve, IRSensor, Buzzer
+from utils import SCREENWIDTH, SCREENHEIGHT, getPosition
 
 logger = logging.getLogger('TouchMenu')
+
 logPath = os.path.abspath('logs')
 protocolsPath = 'protocols'
 userLogHdlr = None
 touchDBFile = 'touchDB.json'
-
-SCREENWIDTH  = 800
-SCREENHEIGHT = 480
 
 
 def add_back_button(menu):
@@ -128,6 +127,8 @@ def scan_directory(dirPath):
         if filename.endswith('.py'):
             files.append(filename)
 
+    files.sort()
+
     return files
 
 
@@ -226,13 +227,13 @@ def ir_menu():
 
     irSensor = IRSensor()
 
-    def updateIRsensor(Label,menu):
+    def updateIRsensor(label,menu):
         state = irSensor.isPressed()
         if state == True:
             msg = 'Activated'
         else:
             msg = 'Not Activated'
-        Label.set_title('IR Sensor state: {: <15}'.format(msg))
+        label.set_title('IR Sensor state: {: <15}'.format(msg))
 
     irL1 = irMenu.add.label('Status')
     irL1.add_draw_callback(updateIRsensor)
@@ -264,21 +265,21 @@ def sound_menu():
 
     def incfrec(label):
         params.frec = params.frec + 10.0
-        label.set_title('{:3.0f} Hz '.format(params.frec))
+        label.set_title('{:3.0f} Hz'.format(params.frec))
 
     def decfrec(label):
         if params.frec > 20.0:
             params.frec = params.frec - 10.0
-            label.set_title('{:3.0f} Hz '.format(params.frec))
+            label.set_title('{:3.0f} Hz'.format(params.frec))
 
     def incduration(label):
         params.duration = params.duration + 0.1
-        label.set_title('{:2.1f} s  '.format(params.duration))
+        label.set_title('     {:2.1f} s'.format(params.duration))
 
     def decduration(label):
         if params.duration > .1:
             params.duration = params.duration - 0.1
-            label.set_title('{:2.1f} s  '.format(params.duration))
+            label.set_title('     {:2.1f} s'.format(params.duration))
 
     def playsnd():
         buzzer.play(params.frec,params.duration)
@@ -292,9 +293,9 @@ def sound_menu():
     frameF.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add.button('  -  ', decfrec, labelF, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
 
-    labelT = sndMenu.add.label('  {:2.1f} s  '.format(params.duration))
+    labelT = sndMenu.add.label('     {:2.1f} s'.format(params.duration))
     frameT = sndMenu.add.frame_h(600,58)
-    frameT.pack(sndMenu.add.label('  Duration:'), align = pygame_menu.locals.ALIGN_CENTER)
+    frameT.pack(sndMenu.add.label('   Duration:'), align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(labelT, align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(sndMenu.add.button(' + ', incduration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) # \u2795
@@ -451,6 +452,7 @@ def main_menu():
             items = selector.get_items()
             items.pop(sIdx)
             selector.update_items(items)
+            selector._index = 0
 
     def clearItems(selector):
         sType = selector.get_id()
@@ -459,6 +461,7 @@ def main_menu():
         table.truncate()
         items = [('No Name',)]
         selector.update_items(items)
+        selector._index = 0
 
     def run_files_menu(menu, surface):
         data = menu.get_input_data()

@@ -98,6 +98,7 @@ class TestingTouch(Protocol):
         self.log('Decide what to do when the IRbeam was broken')
 
     def end(self):
+        self.setNote()
         self.log('ended training')
 
 
