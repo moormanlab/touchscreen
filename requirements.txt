@@ -1,7 +1,7 @@
 #python>=3.7
 pygame>=2.0
-pygame-menu>=4.0.7
+pygame-menu>=4.1.0
 gpiozero>=1.6.2
 rpi.gpio>=0.7.0
-pygame-vkeyboard>=2.0.8
+pygame-vkeyboard>=2.0.9
 tinydb>=4.4.0

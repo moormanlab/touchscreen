@@ -15,7 +15,7 @@ git clone https://github.com/moormanlab/touchscreen
 python3 -m venv touchenv
 source ~/touchenv/bin/activate
 pip install --upgrade pip setuptools
-grep -v '^#' touchscreen/requirements.txt | xargs -L1 pip install
+pip install -r touchscreen/requirements.txt
 cp ~/touchscreen/touch.desktop ~/.local/share/applications
 mkdir ~/.config/autostart
 cp ~/touchscreen/touch.desktop ~/.config/autostart

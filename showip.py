@@ -3,6 +3,7 @@
 import socket
 from tkinter import *
 
+LOCALHOST = '127.0.0.1'
 def getip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -10,13 +11,13 @@ def getip():
         s.connect(('8.8.8.8', 80))
         IP = str(s.getsockname()[0])
     except Exception:
-        IP = '127.0.0.1'
+        IP = LOCALHOST
     finally:
         s.close()
     return IP
 
 def isLinkUp():
-    if getip() == '127.0.0.1':
+    if getip() == LOCALHOST:
         return False
     else:
         return True
