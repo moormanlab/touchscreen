@@ -15,6 +15,12 @@ def getip():
         s.close()
     return IP
 
+def isLinkUp():
+    if getip() == '127.0.0.1':
+        return False
+    else:
+        return True
+
 def update():
     localIP.config(text=getip())
     rootWindow.title(getip())

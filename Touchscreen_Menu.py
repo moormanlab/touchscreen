@@ -370,7 +370,14 @@ def create_surface():
 
 
 def initialize_logging():
-    # Initialize logging 
+    # Initialize logging
+    delay  = 10
+    while not showip.isLinkUp():
+        time.sleep(1)
+        delay -= 1
+        if delay == 0:
+            break
+
     formatDate='%Y/%m/%d@@%H:%M:%S'
     sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
     sysFormatter = logging.Formatter(fmt=sysFormatStr,datefmt=formatDate)
@@ -397,6 +404,7 @@ def initialize_logging():
     userLogHdlr.setFormatter(userFormatter)
     userLogHdlr.close()
     logger.info('Logging initialized')
+    logger.debug('Remaining waiting seconds {:d}'.format(delay))
 
 
 def dbGetAll(subjectType):
