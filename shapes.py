@@ -99,7 +99,7 @@ class Draw(object):
         elif start and size:
             end = (start[0]+size[0],start[1]+size[1])
         elif center and size:
-            start = (center[0]-size[0]/2,center[1]+size[1]/2)
+            start = (center[0]-size[0]/2,center[1]-size[1]/2)
             end = (start[0]+size[0],start[1]+size[1])
         else:
             raise ValueError('Missing values')
