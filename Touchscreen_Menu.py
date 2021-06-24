@@ -371,12 +371,24 @@ def create_surface():
 
 def initialize_logging():
     # Initialize logging
-    delay  = 10
+    delayLink  = 10
     while not showip.isLinkUp():
         time.sleep(1)
-        delay -= 1
+        delayLink -= 1
         if delay == 0:
             break
+
+    # once there is a connection, usually takes 20 seconds to syncronize the clock
+    delaySync = 25
+    if showip.isLinkUp():
+        while delaySync:
+            a = datetime.datetime.now()
+            time.sleep(1)
+            b = datetime.datetime.now()
+            c = b - a
+            if c.seconds > 2:
+                break
+            delaySync -=1
 
     formatDate='%Y/%m/%d@@%H:%M:%S'
     sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
@@ -404,7 +416,9 @@ def initialize_logging():
     userLogHdlr.setFormatter(userFormatter)
     userLogHdlr.close()
     logger.info('Logging initialized')
-    logger.debug('Remaining waiting seconds {:d}'.format(delay))
+    logger.debug('Remaining Link waiting seconds {:d}'.format(delayLink))
+    logger.debug('Remaining Sync waiting seconds {:d}'.format(delaySync))
+    logger.debug('{}'.format(showip.getip()))
 
 
 def dbGetAll(subjectType):
