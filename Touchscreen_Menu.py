@@ -367,13 +367,12 @@ def create_surface():
     
     return surface
 
+def piSynchronizeTime():
+    delayLinkInit = 10
+    delaySyncInit = 25
 
-
-def initialize_logging():
-    # Initialize logging
-    delayLink = 10
-    delaySync = 25
-    msg = 'No need to synchronize time'
+    delayLink = delayLinkInit
+    delaySync = delaySyncInit
     if isRaspberryPI():
         while delayLink:
             time.sleep(1)
@@ -389,13 +388,24 @@ def initialize_logging():
                 b = datetime.datetime.now()
                 c = b - a
                 if c.seconds > 2:
-                    msg = 'System time correctly updated'
+                    msg = 'System time correctly updated. LinkDelay {}, SyncDelay {}'.format(delayLinkInit-delayLink,delaySyncInit-delaySync)
                     break
                 delaySync -=1
-            msg = 'Exceeded sync delay, System time was not updated'
-        else:
-            msg = 'Exceeded connection delay, Internet connection was not established'
 
+            if delaySync == 0:
+                msg = 'Exceeded sync delay, System time was not updated. LinkDelay {} SyncTimeAwaited {}'.format(delayLinkInit-delayLink,delaySyncInit)
+        else:
+            msg = 'Exceeded connection delay, Internet connection was not established. LinkDelayAwaited {}'.format(delayLinkInit)
+    else:
+        msg = 'Working on computer, no need to synchronize time'
+
+    return msg
+
+def initialize_logging():
+    # wait for time synchronization
+    msg = piSynchronizeTime()
+
+    # Initialize logging
     formatDate='%Y/%m/%d@@%H:%M:%S'
     sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
     sysFormatter = logging.Formatter(fmt=sysFormatStr,datefmt=formatDate)
@@ -422,8 +432,6 @@ def initialize_logging():
     userLogHdlr.setFormatter(userFormatter)
     userLogHdlr.close()
     logger.info('Logging initialized')
-    logger.debug('Remaining Link waiting seconds {:d}'.format(delayLink))
-    logger.debug('Remaining Sync waiting seconds {:d}'.format(delaySync))
     logger.debug(msg)
     logger.debug('{}'.format(showip.getip()))
 
