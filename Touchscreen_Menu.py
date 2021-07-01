@@ -371,24 +371,30 @@ def create_surface():
 
 def initialize_logging():
     # Initialize logging
-    delayLink  = 10
-    while not showip.isLinkUp():
-        time.sleep(1)
-        delayLink -= 1
-        if delay == 0:
-            break
-
-    # once there is a connection, usually takes 20 seconds to syncronize the clock
+    delayLink = 10
     delaySync = 25
-    if showip.isLinkUp():
-        while delaySync:
-            a = datetime.datetime.now()
+    msg = 'No need to synchronize time'
+    if isRaspberryPI():
+        while delayLink:
             time.sleep(1)
-            b = datetime.datetime.now()
-            c = b - a
-            if c.seconds > 2:
+            if showip.isLinkUp():
                 break
-            delaySync -=1
+            delayLink -= 1
+
+        # once there is a connection, usually takes 20 seconds to synchronize the clock
+        if showip.isLinkUp():
+            while delaySync:
+                a = datetime.datetime.now()
+                time.sleep(1)
+                b = datetime.datetime.now()
+                c = b - a
+                if c.seconds > 2:
+                    msg = 'System time correctly updated'
+                    break
+                delaySync -=1
+            msg = 'Exceeded sync delay, System time was not updated'
+        else:
+            msg = 'Exceeded connection delay, Internet connection was not established'
 
     formatDate='%Y/%m/%d@@%H:%M:%S'
     sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
@@ -418,6 +424,7 @@ def initialize_logging():
     logger.info('Logging initialized')
     logger.debug('Remaining Link waiting seconds {:d}'.format(delayLink))
     logger.debug('Remaining Sync waiting seconds {:d}'.format(delaySync))
+    logger.debug(msg)
     logger.debug('{}'.format(showip.getip()))
 
 

@@ -197,7 +197,9 @@ class Protocol(BaseProtocol):
         #assert isinstance(fps, int)
         self._fps = fps
 
-    def setNote(self):
+    def setNote(self,title=None):
         note = keyboard(self.surface)
         if note != '':
-            self.log('Note: {}'.format(note))
+            if title == None:
+                title = 'Note'
+            self.log('{}: {}'.format(title,note))
