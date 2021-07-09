@@ -4,107 +4,74 @@ Hardware Abstraction Layer for Mice Touchscreen Project
 
 import time
 import logging
-import platform
+import gpiozero
+
+from arch import isRaspberryPI
+
 logger = logging.getLogger('touchHAL')
 
-buzzerPIN = 17
-irPIN     = 23
-valvePIN  = 26
+'''
+gpio pins used by different hardware
 
-RASPBERRY_PI = 0
-PC           = 1
-MACOS        = 2
-LINUX_X86    = 3
+audio:
+audiohat (fixed): 2 (i2c sda), 3 (i2c scl), 25 (led), 19 (i2s lrclk), 18 (i2s clk), 20 (i2s adc), 21 (i2s dac), 23 (button)
+buzzer   (flexible): 6 (+), GND (-) 
+speakers (fixed): (3.5 mm audio jack)
 
-def _getArch():
-    platf = platform.uname()
-    if platf[0] == 'Windows':
-        return PC
-    elif platf[0] == 'Linux':
-        if platf[4].startswith('arm'):
-            return RASPBERRY_PI
-        elif platf[4].startswith('x86'):
-            return LINUX_X86
-        else:
-            raise NameError('Linux architecture not supported')
-    elif platf[0] == 'Darwin':
-        return MACOS
-    else:
-        raise NameError('Architecture not recongnized')
+sensors:
+adafruit/sparkfun (flexible): 3.3V, GND, 4 (input)
 
-#Checks if system is a Raspberry PI 
-def isRaspberryPI():
-    return (_getArch()==RASPBERRY_PI)
+battery:
+UPSV3P2 (fixed/flexible): 5V, GND, 8 (UART txd), 10 (uart rxd) / 17 (shutdown input)
 
-###########################
-## Buzzer
-###########################
+liquid reward:
+valve/pump (flexible): 5V, GND, 26 (output)
 
-class Buzzer():
-    class _dummyBuzzer:
-        def __init__(self):
-            import pygame
-            pygame.mixer.quit()
-            pygame.mixer.init(44100, -16, 1)
-            self.Fs = pygame.mixer.get_init()[0]
-            self.amplitude = 2 ** (abs(pygame.mixer.get_init()[1]) - 1) - 1
-
-    
-        def play(self,frec=440.,duration=1.0):
-            import pygame
-            import math
-            import array
-            
-            amp = self.amplitude
-            if type(frec) == str:
-                from gpiozero.tones import Tone
-                f=Tone(frec)
-                frec = float(f.real)
-            elif type(frec) == int:
-                frec = float(frec)
-            elif frec == None:
-                amp = 0
-                frec= 440.0
-
-            tau = 2*math.pi
-            lT = int(duration*self.Fs)
-            bufferSnd = array.array('h',[int(amp*math.sin(t*tau*frec/self.Fs)) for t in range(lT)])
-            Tone=pygame.mixer.Sound(array=bufferSnd)
-            Tone.play()
-            logger.info('Dummy tone f={:4.4} Hz d={:4.4f}'.format(frec,duration))
-            time.sleep(duration)
+food reward:
+(flexible): 16 (output)
+'''
 
 
-    class _piBuzzer:
-        def __init__(self):
-            from gpiozero import TonalBuzzer
-            self.bz= TonalBuzzer(buzzerPIN)
+########################################
+## Sound
+########################################
+from sound import SparkFunBuzzer, SparkfunCustomSpeaker, AudioHatPro
+class Sound():
 
-        def play(self,frec=440.0,duration=1.0):
-            from gpiozero.tones import Tone
-            if type(frec) == float or type(frec)==int:
-                t = Tone(float(frec))
-            elif type(frec) == str:
-                t = Tone(frec)
-                frec = t.real
-            else:
-                t = frec
-                frec = 0.
-            logger.info('Buzzer Tone f={:4.3f}, d={:4.4f}'.format(frec,duration))
-            self.bz.play(t)
-            time.sleep(float(duration))
-            self.bz.stop()
-
+    #__arch = isRaspberryPI()
     __instance = None
-    __arch = None
+    __variant = None
     
-    def __init__(self):
-        if Buzzer.__instance is None:
-            Buzzer.__arch = _getArch()
-            if Buzzer.__arch == RASPBERRY_PI:
-                Buzzer.__instance=Buzzer._piBuzzer()
+    def __init__(self, variant=None):
+        '''
+            if there is no instance create one.
+            if no variant specified or using PC, use a dummy
+            if already is an instance and specifying a new variant 
+            (only should happen during hardware configuration)
+            close old instance and create the new one.
+        '''
+        if Sound.__instance and variant is not None:
+            logger.debug('Closing Sound instance {}'.format(Sound.__variant))
+            Sound.__instance._close()
+            Sound.__instance = None
+            Sound.__variant = None
+
+        if Sound.__instance is None:
+            #if Sound.__arch == True and variant is not None:
+            if variant is not None:
+                if variant == 'spkfbuzzer':
+                    Sound.__instance = SparkFunBuzzer()
+                elif variant == 'spkfcustspk':
+                    Sound.__instance = SparkfunCustomSpeaker()
+                elif variant == 'raspiaudio':
+                    Sound.__instance = AudioHatPro()
+                else:
+                    raise ValueError('Audio device not recognized')
+                Sound.__variant = variant
             else:
-                Buzzer.__instance=Buzzer._dummyBuzzer()
+                raise ValueError('Audio device not specified')
+            logger.debug('New sound instance {}'.format(Sound.__variant))
+
 
     def __getattr__(self, attr):
         """ Delegate access to implementation """
@@ -114,105 +81,58 @@ class Buzzer():
         """ Delegate access to implementation """
         return setattr(self.__instance, attr, value)
 
-    def play(self,frec=440.0,duration=1.0):
-        return self.__instance.play(frec,duration)
+    def get_type(self):
+        return self.__variant
 
-    def playTune(self,tune):
-        logger.info('Buzzer playing custom tune')
-        for note, duration in tune:
-            self.__instance.play(note,duration)
+    #def play(self,frec=440.0,duration=1.0):
+    #    return self.__instance.play(frec,duration)
 
-###########################
-## IRSensor
-###########################
+    #def playTune(self,tune):
+    #    logger.info('Buzzer playing custom tune')
+    #    self.__instance.playTune(tune)
+
+
+########################################
+## IR Reward Sensor
+########################################
+from sensor import AdafruitSensor, SparkfunCustomIrSensor
 class IRSensor(object):
-    class _dummySensor(object):
 
-        def __init__(self,handler=None):
-            self.handler = handler
-            self.time = 0
-            self.pressed = False
-
-            import threading
-            self.thread = threading.Thread(target=self._dummyThread,daemon=True)
-            self.thread.start()
-            
-        def _dummyThread(self):
-            import pygame
-            from pygame.locals import K_i
-            dummyrun = True
-            while dummyrun:
-              time.sleep(.01)
-              keys = pygame.key.get_pressed()
-              if keys[K_i]:
-                if not self.pressed:
-                  self._sensorHandler()
-                  self.pressed = True
-                time.sleep(.01)
-              else:
-                if self.pressed:
-                  self.pressed = False
-
-        def _sensorHandler(self):
-            logger.info('IR sensor activated')
-            try:
-                if self.handler is not None:
-                    self.handler()
-                else:
-                    logger.info('generic handler')
-            except Exception:
-                logger.exception('Exception handled module sensor')
-
-        def isPressed(self):
-            return self.pressed
-
-        def setHandler(self,handler):
-            self.handler = handler
-
-        def releaseHandler(self):
-            self.handler = None
-
-    class _piSensor:
-        def __init__(self,handler=None):
-            from gpiozero import Button
-            self.handler = handler
-            self.sensor = Button(irPIN)
-            self.sensor.when_pressed = self._sensorHandler
-
-        def _sensorHandler(self):
-            logger.info('IR sensor activated')
-            try:
-                if self.handler is not None:
-                    self.handler()
-                else:
-                    logger.info('generic handler')
-            except Exception as e:
-                logger.exception('Exception handled module sensor')
-
-        def isPressed(self):
-            return self.sensor.is_pressed
-
-        def setHandler(self,handler):
-            logger.info('irsensor handler set')
-            print('irsensor handler set')
-            self.handler = handler
-
-        def releaseHandler(self):
-            self.handler = None
-
+    #__arch = isRaspberryPI()
     __instance = None
-    __arch = None
+    __variant = None
 
-    def __init__(self,handler=None):
+    def __init__(self,handler=None,variant=None):
+        ''' 
+            if there is already an instance and specifying a (new) variant (only should happen during hardware configuration) close old instance and create the new one.
+            if there is no instance create one.
+            if no variant specified or using PC, use a dummy
+            if no variant specified and there is already an instance, just set or release handler
+        '''
+        #print('here initializing IRSensor')
+        if IRSensor.__instance and variant is not None:
+            logger.debug('Closing IRSensor instance {}'.format(IRSensor.__variant))
+            IRSensor.__instance._close()
+            IRSensor.__instance = None
+            IRSensor.__variant = None
+
         if IRSensor.__instance is None:
-            IRSensor.__arch = _getArch()
-            if  IRSensor.__arch == RASPBERRY_PI:
-                IRSensor.__instance=IRSensor._piSensor(handler)
+            #if IRSensor.__arch == True and variant is not None:
+            if variant is not None:
+                if variant == 'adafruit':
+                    IRSensor.__instance=AdafruitSensor(handler)
+                elif variant == 'sparkfuncustom':
+                    IRSensor.__instance=SparkfunCustomIrSensor(handler)
+                else:
+                    raise ValueError('Sensor device not recognized')
+                IRSensor.__variant = variant
             else:
-                IRSensor.__instance=IRSensor._dummySensor(handler)
+                raise ValueError('Sensor device not specified')
+
+            logger.debug('New IRSensor instance {}'.format(IRSensor.__variant))
         else:
             if handler is not None:
-                IRSensor.__instance.setHandler(handler)
+                IRSensor.__instance.set_handler(handler)
             else:
                 IRSensor.__instance.releaseHandler()
 
@@ -224,78 +144,65 @@ class IRSensor(object):
         """ Delegate access to implementation """
         return setattr(self.__instance, attr, value)
 
-    def isPressed(self):
-        return self.__instance.isPressed()
+    def is_activated(self):
+        if IRSensor.__instance:
+            return IRSensor.__instance.is_activated()
+        else:
+            return False
 
-    def setHandler(self,handler):
-        self.__instance.setHandler(handler)
+    def set_handler(self, handler):
+        if IRSensor.__instance:
+            IRSensor.__instance.set_handler(handler)
 
-    def releaseHandler(self):
-        self.__instance.releaseHandler()
+    def release_handler(self):
+        if IRSensor.__instance:
+            IRSensor.__instance.release_handler()
+
+    def get_type(self):
+        return self.__variant
+
+#    def __del__(self):
+#        logger.debug('Deleting global instance of IRSensor')
+#        print('Deleting global instance of IRSensor')
+#        if IRSensor.__instance:
+#            IRSensor.__instance._close()
+#            IRSensor.__instance = None
+#
 
 
-###########################
-## Valve
-###########################
-class Valve(object):
-    class _dummyValve:
-        def __init__(self,openTime):
-            logger.info('Using Dummy Valve')
-            self.state = False
-            self.openTime = openTime
+########################################
+## Liquid Reward
+########################################
+from liqrew import LeeValve, LeePump
 
-        def close(self):
-            self.state = False
-        
-        def open(self):
-            self.state = True
-
-        def drop(self):
-            self.state = False
-
-        def setOpenTime(self, openTime):
-            self.openTime = openTime
-
-        def getOpenTime(self):
-            return self.openTime
-
-        def isOpen(self):
-            return self.state
-
-    class _piValve:
-        def __init__(self,openTime):
-            from gpiozero import LED
-            self.valve = LED(valvePIN)
-            self.openTime = openTime
-
-        def setOpenTime(self,openTime):
-            self.openTime = openTime
-
-        def getOpenTime(self):
-            return self.openTime
-
-        def isOpen(self):
-            return self.valve.is_lit
-
-        def open(self):
-            self.valve.on()
-
-        def close(self):
-            self.valve.off()
-
-        def drop(self):
-            self.valve.blink(on_time=self.openTime,n=1)
-
+class LiqReward(object):
     __instance = None
-    __arch = None
+    __variant = None
 
-    def __init__(self,openTime=.05):
-        if Valve.__instance is None:
-            Valve.__arch = _getArch()
-            if  Valve.__arch == RASPBERRY_PI:
-                Valve.__instance=Valve._piValve(openTime)
+    def __init__(self, drop_amount: int = 1, variant: str = None):
+        ''' if there is no instance create one.
+            if no variant specified or using PC, use a dummy
+            if already is an instance and specifying a new variant 
+            (only should happen during hardware configuration)
+            close old instance and create the new one.
+        '''
+        if LiqReward.__instance and variant is not None:
+            logger.debug('Closing Liquid Reward instance {}'.format(LiqReward.__variant))
+            LiqReward.__instance._close()
+            LiqReward.__instance = None
+            LiqReward.__variant = None
+
+        if LiqReward.__instance is None:
+            if variant is not None:
+                if variant == 'leevalve':
+                    LiqReward.__instance = LeeValve(drop_amount)
+                elif variant == 'leepump':
+                    LiqReward.__instance = LeePump(drop_amount)
+                LiqReward.__variant = variant
             else:
-                Valve.__instance=Valve._dummyValve(openTime)
+                raise ValueError('Liquid Reward Variant needs to be specified')
+            logger.debug('New Liquid Reward instance {}'.format(LiqReward.__variant))
+
 
     def __getattr__(self, attr):
         """ Delegate access to implementation """
@@ -305,37 +212,81 @@ class Valve(object):
         """ Delegate access to implementation """
         return setattr(self.__instance, attr, value)
 
-    def setOpenTime(self,openTime):
-        logger.info('Valve openTime {:.4f}'.format(openTime))
-        return self.__instance.setOpenTime(openTime)
+    def __str__(self):
+        if LiqReward.__instance:
+            return self.__instance.__str__()
 
-    def getOpenTime(self):
-        return self.__instance.getOpenTime()
+    def set_drop_amount(self, drop_amount: int):
+        if LiqReward.__instance:
+            logger.info('Liquid Reward drop amount {:d}'.format(drop_amount))
+            return LiqReward.__instance.set_drop_amount(drop_amount)
 
-    def isOpen(self):
-        return self.__instance.isOpen()
+    def get_drop_amount(self):
+        if LiqReward.__instance:
+            return LiqReward.__instance.get_drop_amount()
+
+    def is_open(self):
+        if LiqReward.__instance:
+            return LiqReward.__instance.is_open()
 
     def open(self):
-        logger.info('Valve open')
-        return self.__instance.open()
+        if LiqReward.__instance:
+            logger.info('Valve open')
+            return LiqReward.__instance.open()
 
     def close(self):
-        logger.info('Valve closed')
-        return self.__instance.close()
+        if LiqReward.__instance:
+            logger.info('Valve closed')
+            return LiqReward.__instance.close()
 
     def drop(self):
-        logger.info('Valve drop openTime {:.3f}'.format(self.openTime))
-        return self.__instance.drop()
+        if LiqReward.__instance:
+            logger.info('Valve drop amount {}'.format(repr(LiqReward.__instance)))
+            return LiqReward.__instance.drop()
+
+    def get_type(self):
+        return LiqReward.__variant
+
+#    def __del__(self):
+#        print('Deleting instance of LiqReward')
+#        if self.__instance:
+#            self.__instance._close()
+
+############
+# Battery
+############
+from battery import UPSV3P2Bat
+
+class Battery(object):
+    __instance = None
+    __variant = None
+    
+    def __init__(self, variant = None):
+        if Battery.__instance is None:
+            Battery.__instance = UPSV3P2Bat()
+
+    def __getattr__(self, attr):
+        """ Delegate access to implementation """
+        return getattr(self.__instance, attr)
+
+    def __setattr__(self, attr, value):
+        """ Delegate access to implementation """
+        return setattr(self.__instance, attr, value)
+
+    def disconnect(self):
+        if Battery.__instance:
+            Battery.__instance._close()
+            Battery.__instance = None
 
 if __name__=='__main__':
-    val = Valve()
+    val = LiqReward()
     val.open()
     time.sleep(.5)
     val.close()
     val.setOpenTime(.2)
     val.drop()
 
-    buzz = Buzzer()
+    buzz = Sound()
     buzz.play(440,0.5)
 
     tune = [('C#4', 0.2), ('D4', 0.2), (None, 0.2),
@@ -359,7 +310,7 @@ if __name__=='__main__':
         print('IR handler')
         logger.info('testing handler')
     irbeam = IRSensor()
-    irbeam.setHandler(testHandler)
+    irbeam.set_handler(testHandler)
 
     running = True
     while running:

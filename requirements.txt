@@ -5,3 +5,4 @@ gpiozero>=1.6.2
 rpi.gpio>=0.7.0
 pygame-vkeyboard>=2.0.9
 tinydb>=4.4.0
+pyserial>=3.5

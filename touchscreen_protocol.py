@@ -1,7 +1,8 @@
 import logging
 import pygame
+from abc import ABC, abstractmethod
 
-from hal import isRaspberryPI, Valve, IRSensor, Buzzer
+from hal import isRaspberryPI, LiqReward, IRSensor, Sound
 from keyboard import keyboard
 from utils import POINTERPRESSED, POINTERMOTION, POINTERRELEASED, getPosition, tsColors
 from return_to_menu import return_to_menu
@@ -30,14 +31,17 @@ class tsEvent(object):
             return 'None'
 
 
-class BaseProtocol(object):
+class BaseProtocol(ABC):
 
     def __init__(self, surface, subject=None, experimenter=None):
         self._type = 'BaseProtocol'
         self.surface = surface
-        self.valve = Valve()
-        self.sensor = IRSensor(self.sensorHandler)
-        self.sound = Buzzer()
+        self.liqrew = LiqReward()
+        self.sensor = IRSensor(self.sensor_handler)
+        self.sound = Sound()
+        logger.debug('Sensor variant {}'.format(self.sensor.get_type()))
+        logger.debug('Sound variant {}'.format(self.sound.get_type()))
+        logger.debug('Liquid reward variant {}'.format(self.liqrew.get_type()))
         self._logfile = None
         self.subject = subject
         self.experimenter = experimenter
@@ -60,7 +64,7 @@ class BaseProtocol(object):
         logger.info('End running baseprotocol {}'.format(self.__class__.__name__))
         self.end()
     
-    def setLogFile(self,filename):
+    def set_log_filename(self, filename):
         import datetime, os
         oldlogfile = self._logHdlr.baseFilename
         logPath = os.path.dirname(oldlogfile)
@@ -84,14 +88,14 @@ class BaseProtocol(object):
     def log(self,string):
         self.logger.info(string)
 
-    def sensorHandler(self):
+    def sensor_handler(self):
         pass
 
     def init(self):
         pass
 
     def main(self):
-        pass
+        raise NotImplementedError
 
     def end(self):
         pass
@@ -131,7 +135,6 @@ class Protocol(BaseProtocol):
         super().__init__(surface, subject, experimenter)
         self.screen = Protocol.Screen(surface,backcolor)
         self.draw = shapes.Draw(surface)
-        #self.backcolor = backcolor
         self._type = 'Protocol'
         self._exit = False
         self._fps = 60
@@ -164,11 +167,7 @@ class Protocol(BaseProtocol):
                     self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
 
                 # only on PC
-                if event.type == pygame.KEYDOWN: #escape from program
-                    # Was it the Escape key? If so, stop the loop.
-                    if event.key == pygame.K_ESCAPE:
-                        return
-                elif event.type == pygame.QUIT:
+                if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.QUIT:
                     return
 
                 if return_to_menu(event):

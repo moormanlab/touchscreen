@@ -13,7 +13,7 @@ class Test1(BaseProtocol):
     '''
 
     def init(self):
-        self.setLogFile('Example Test 1')
+        self.set_log_filename('Example Test 1')
 
     def main(self):
         import pygame
@@ -42,7 +42,7 @@ class Test2(Protocol):
     '''
     def init(self):
         #self.log('This message will get lost in old log file')
-        self.setLogFile('Example test 2')
+        self.set_log_filename('Example test 2')
         self.log('Start training Test2 with new logging file')
 
     def main(self,event):
@@ -63,8 +63,8 @@ class TestingTouch(Protocol):
         This protocol only ends using the built in quiting procedure: touch in the upper left corner and slide up the upper right corner.
     '''
     def init(self):
-        self.sensor.setHandler(self.sensorHandler)
-        self.valve.setOpenTime(.03)
+        self.sensor.set_handler(self.sensor_handler)
+        self.liqrew.set_drop_amount(2)
         self.pressed = False
         self.lastposition = 0
         self.log('Test Started')
@@ -80,9 +80,9 @@ class TestingTouch(Protocol):
             self.draw.circle(white, event.position, 20)
             self.lastposition = event.position
             self.screen.update()
-            self.sound.play(frec=440,duration=.2)
+            self.sound.play(frequency=440, duration=.2)
             self.log('Valve drop, giving reward')
-            self.valve.drop()
+            self.liqrew.drop()
             self.log('pointer pressed at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
         elif event.type == POINTERMOTION:
@@ -94,7 +94,7 @@ class TestingTouch(Protocol):
             self.lastposition = 0
             self.log('pointer released at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
-    def sensorHandler(self):
+    def sensor_handler(self):
         self.log('Decide what to do when the IRbeam was broken')
 
     def end(self):

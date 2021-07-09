@@ -12,7 +12,7 @@ import tinydb
 import showip
 from keyboard import keyboard
 from return_to_menu import return_to_menu
-from hal import isRaspberryPI, Valve, IRSensor, Buzzer
+from hal import isRaspberryPI, LiqReward, IRSensor, Sound, Battery
 from utils import SCREENWIDTH, SCREENHEIGHT, getPosition
 
 logger = logging.getLogger('TouchMenu')
@@ -21,6 +21,8 @@ logPath = os.path.abspath('logs')
 protocolsPath = 'protocols'
 userLogHdlr = None
 touchDBFile = 'touchDB.json'
+touchDB = tinydb.TinyDB(touchDBFile)
+#hardware_initialized = False
 
 
 def add_back_button(menu):
@@ -48,7 +50,21 @@ def initialize_menu(title):
     return menu
 
 
-def import_protocols(filename):
+def window_message(message):
+    menu = pygame_menu.Menu('Warning', int(SCREENWIDTH *.75), int(SCREENHEIGHT * .75),
+                            theme = pygame_menu.themes.THEME_DARK,
+                            onclose = pygame_menu.events.RESET,
+                            touchscreen = True if isRaspberryPI() else False,
+                            joystick_enabled = False,
+                            mouse_enabled = False if isRaspberryPI() else True,
+                            )
+
+    menu.add.label(message)
+    add_close_button(menu)
+    
+    return menu
+
+def import_protocols(filename,surface):
     # Imports file as a module (excludes .py extension)
     try:
         module = import_module(protocolsPath+'.'+filename[:-3])
@@ -57,8 +73,10 @@ def import_protocols(filename):
         # Retrieves classes from module
         classes = inspect.getmembers(module, inspect.isclass)
     except Exception:
+        msg = 'Exception when importing file: \n\{}.\nCheck logfile to see details'.format(filename)
         logger.exception('Exception when importing file {}'.format(filename))
-        #TODO add an error message in the screen
+        wm = window_message(msg) #TODO add an error message in the screen
+        wm.mainloop(surface)
         classes = []
 
     return classes
@@ -69,6 +87,9 @@ def protocol_run(protocol, surface, data):
     global userLogHdlr
 
     logger.debug('Starting protocol {}'.format(protocol.__name__))
+
+    #initialize hardware if is not has been before
+    initialize_hardware()
 
     try:
         protoc = protocol(surface, subject = data[0], experimenter = data[1])
@@ -83,8 +104,10 @@ def protocol_run(protocol, surface, data):
         #close protocol logfile
         userLogHdlr.close()
     except Exception:
+        msg = 'Exception running protocol  \n\t \'{}\'.\nCheck logfile to see details'.format(protocol.__name__)
         logger.exception('Exception running protocol {}'.format(protocol.__name__))
-        #TODO add an error message in the screen
+        wm = window_message(msg) #TODO add an error message in the screen
+        wm.mainloop(surface)
 
     return
 
@@ -96,7 +119,7 @@ def function_menu(filename,data,surface):
     base_classes = ['BaseProtocol', 'Protocol']
 
     # Get functions from test_file
-    protocols = import_protocols(filename)
+    protocols = import_protocols(filename,surface)
 
     # Creates a button for each function
     fMenu.add.label('Subject: {} | Experimenter: {}'.format(data[0],data[1]))
@@ -154,8 +177,10 @@ def shutdown_pi_menu():
 
     def shutdown_pi():
         logger.info('Shutting down Raspberry pi')
-        time.sleep(.1)
+        subprocess.call(['sudo', 'sync'])
+        time.sleep(1)
         subprocess.call(['sudo', 'shutdown', 'now'])
+        #sys.exit()
 
     confirm_menu = initialize_menu('Shutdown Device')
 
@@ -173,62 +198,62 @@ def shutdown_pi_menu():
     return confirm_menu
 
 
-def valve_menu():
+def liquid_reward_menu(liqrewdev):
 
-    vMenu = initialize_menu('Valve')
+    lr_menu = initialize_menu('Liquid Reward')
 
-    valve = Valve()
+    liqrew = LiqReward(variant=liqrewdev)
 
     def control(stateVal):
         if stateVal == False:
-            valve.close()
+            liqrew.close()
         else:
-            valve.open()
+            liqrew.open()
 
-    def increaseOT(Label):
-        otime = valve.getOpenTime()
-        otime = otime + .01
-        valve.setOpenTime(otime)
-        Label.set_title('{:03.0f} ms'.format(otime*1000))
+    def increase_drop(Label):
+        drop_amount = liqrew.get_drop_amount()
+        drop_amount += 1
+        liqrew.set_drop_amount(drop_amount)
+        Label.set_title(liqrew)
 
-    def decreaseOT(label):
-        otime = valve.getOpenTime()
-        otime = otime - .01
-        if otime > 0:
-            valve.setOpenTime(otime)
-            label.set_title('{:03.0f} ms'.format(otime*1000))
+    def decrease_drop(Label):
+        drop_amount = liqrew.get_drop_amount()
+        drop_amount -= 1
+        if drop_amount > 0:
+            liqrew.set_drop_amount(drop_amount)
+            Label.set_title(liqrew)
     
     def valveDrop(switch):
-        valve.drop()
+        liqrew.drop()
         logger.info('set switch status')
         switch.set_value(False)
 
-    T1 = vMenu.add.toggle_switch('Valve State:', False, state_text=('Closed', 'Open'), onchange=control, single_click=True)
-    vMenu.add.vertical_margin(30)
-    vMenu.add.button('Give Drop', valveDrop, T1)
-    vMenu.add.vertical_margin(20)
-    labelT = vMenu.add.label('{:03.0f} ms'.format(valve.getOpenTime()*1000))
-    frame = vMenu.add.frame_h(700, 58)
-    frame.pack(vMenu.add.label('Drop Open Time: '), align = pygame_menu.locals.ALIGN_CENTER)
+    T1 = lr_menu.add.toggle_switch('Valve State:', False, state_text=('Closed', 'Open'), onchange=control, single_click=True)
+    lr_menu.add.vertical_margin(30)
+    lr_menu.add.button('Give Drop', valveDrop, T1)
+    lr_menu.add.vertical_margin(20)
+    labelT = lr_menu.add.label(liqrew)
+    frame = lr_menu.add.frame_h(700, 58)
+    frame._relax = True
     frame.pack(labelT, align = pygame_menu.locals.ALIGN_CENTER)
-    frame.pack(vMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
-    frame.pack(vMenu.add.button(' + ', increaseOT, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
-    frame.pack(vMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
-    frame.pack(vMenu.add.button('  -  ', decreaseOT, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(lr_menu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(lr_menu.add.button(' + ', increase_drop, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(lr_menu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(lr_menu.add.button('  -  ', decrease_drop, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
 
-    add_back_button(vMenu)
+    add_back_button(lr_menu)
 
-    return vMenu
+    return lr_menu
 
 
-def ir_menu():
+def ir_menu(sensor):
 
     irMenu = initialize_menu('Infrared Sensor')
 
-    irSensor = IRSensor()
+    irSensor = IRSensor(variant=sensor)
 
     def updateIRsensor(label,menu):
-        state = irSensor.isPressed()
+        state = irSensor.is_activated()
         if state == True:
             msg = 'Activated'
         else:
@@ -244,63 +269,68 @@ def ir_menu():
         now = datetime.datetime.now().strftime('%H:%M:%S')
         irL2.set_title('Last Trigger: {: <8}'.format(now))
 
-    irSensor.setHandler(sensorTestHandler)
+    irSensor.set_handler(sensorTestHandler)
 
     add_back_button(irMenu)
 
     return irMenu
 
 
-def sound_menu():
+def sound_menu(audio):
 
     class Params:
-        def __init__(self,frec,duration):
-            self.frec = frec
-            self.duration = duration
+        def __init__(self, frec: int, duration: float):
+            self.frec = int(frec)
+            self.duration = float(duration)
 
-    params = Params(440.0,1.0)
+    params = Params(440,1.0)
     sndMenu = initialize_menu('Sound')
 
-    buzzer = Buzzer()
+    sounddev = Sound(audio)
 
-    def incfrec(label):
-        params.frec = params.frec + 10.0
-        label.set_title('{:3.0f} Hz'.format(params.frec))
+    def increase_frequency(label, amount: int):
+        params.frec += amount
+        label.set_title('{:>5d} Hz'.format(params.frec))
 
-    def decfrec(label):
-        if params.frec > 20.0:
-            params.frec = params.frec - 10.0
-            label.set_title('{:3.0f} Hz'.format(params.frec))
+    def decrease_frequency(label, amount: int):
+        if params.frec - amount >= 10:
+            params.frec -= amount
+            label.set_title('{:>5d} Hz'.format(params.frec))
 
-    def incduration(label):
+    def increase_duration(label):
         params.duration = params.duration + 0.1
         label.set_title('     {:2.1f} s'.format(params.duration))
 
-    def decduration(label):
+    def decrease_duration(label):
         if params.duration > .1:
             params.duration = params.duration - 0.1
             label.set_title('     {:2.1f} s'.format(params.duration))
 
     def playsnd():
-        buzzer.play(params.frec,params.duration)
+        sounddev.play(frequency = params.frec, duration = params.duration)
 
-    labelF = sndMenu.add.label('{:3.0f} Hz'.format(params.frec))
-    frameF = sndMenu.add.frame_h(600,58)
+    labelF = sndMenu.add.label('{:>5d} Hz'.format(params.frec))
+    frameF = sndMenu.add.frame_h(700,58)
+    #frameF._relax = True
     frameF.pack(sndMenu.add.label('Frequency: '), align = pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(labelF, align = pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
-    frameF.pack(sndMenu.add.button(' + ', incfrec, labelF, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.button(' ++ ', increase_frequency, labelF, 100, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add._horizontal_margin(5), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.button(' + ', increase_frequency, labelF, 10, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
-    frameF.pack(sndMenu.add.button('  -  ', decfrec, labelF, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.button('  -  ', decrease_frequency, labelF, 10, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add._horizontal_margin(5), align = pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.button('  --  ', decrease_frequency, labelF, 100, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
 
     labelT = sndMenu.add.label('     {:2.1f} s'.format(params.duration))
     frameT = sndMenu.add.frame_h(600,58)
     frameT.pack(sndMenu.add.label('   Duration:'), align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(labelT, align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
-    frameT.pack(sndMenu.add.button(' + ', incduration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) # \u2795
+    frameT.pack(sndMenu.add.button(' + ', increase_duration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) # \u2795
     frameT.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
-    frameT.pack(sndMenu.add.button('  -  ', decduration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) #\u2796
+    frameT.pack(sndMenu.add.button('  -  ', decrease_duration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) #\u2796
     sndMenu.add.button('Play Sound',playsnd)
 
     add_back_button(sndMenu)
@@ -308,47 +338,213 @@ def sound_menu():
     return sndMenu
 
 
+def special_settings_menu(surface):
+
+    spMenu = initialize_menu('Special Settings')
+
+    table = touchDB.table('settings')
+
+    ## Logging level
+    current_level = logging.getLogger().level
+    current_logDebug = True if current_level == logging.DEBUG else False
+
+    def change_loglevel(level):
+        logOpt = table.get(tinydb.Query().logDebugOn.exists())
+
+        table.update({'logDebugOn':level},doc_ids=[logOpt.doc_id])
+        if level:
+            logging.getLogger().setLevel(logging.DEBUG)
+            logger.debug('Debug logging mode activated')
+        else:
+            logger.debug('Debug logging mode deactivated')
+            logging.getLogger().setLevel(logging.INFO)
+
+    spMenu.add.toggle_switch('Logging Level ', current_logDebug, state_text=('Regular', 'Debug'), onchange=change_loglevel, single_click=True, width=180)
+
+    ## Syncing
+    current_sync = table.get(tinydb.Query().syncOn.exists())['syncOn']
+
+    def change_sync(stateval):
+        syncOpt = table.get(tinydb.Query().syncOn.exists())
+        table.update({'syncOn':stateval},doc_ids=[syncOpt.doc_id])
+        logger.debug('Synchronize time {}'.format('enabled' if stateval else 'disabled'))
+
+    spMenu.add.toggle_switch('Synchronize time on start: ', current_sync, state_text=('Disabled', 'Enabled'), onchange=change_sync, single_click=True, width=180)
+
+    ## Battery
+    batteryObj = table.get(tinydb.Query().battery.exists())
+    battery = batteryObj['battery']
+
+    def change_battery(state):
+        bat = Battery()
+        if state:
+            if bat.detect_battery():
+                table.update({'battery':state},doc_ids=[batteryObj.doc_id])
+                logger.debug('Battery connected')
+            else:
+                msg = 'Battery not detected'
+                wm = window_message(msg)
+                logger.debug(msg)
+                wm.mainloop(surface)
+                T1.set_value(False)
+        else:
+            bat.disconnect()
+            logger.debug('Battery not connected')
+            
+            table.update({'battery':state},doc_ids=[batteryObj.doc_id])
+
+    T1 = spMenu.add.toggle_switch('Battery: ', battery, state_text=('Disconnected', 'Connected'), onchange=change_battery, single_click=True, width=230)
+    if battery:
+        change_battery(True)
+
+    # Sounds
+    audioObj = table.get(tinydb.Query().audio.exists())
+    current_audio = audioObj['audio']
+
+    audio_items = [('No Audio', 'None'),('Buzzer', 'spkfbuzzer'),('Speaker','spkfcustspk'),('RaspiAudio','raspiaudio')]
+    for i in range(len(audio_items)):
+        if audio_items[i][1] == current_audio:
+            current_audio_index = i
+            break
+
+    def change_audio(item,value):
+        audioObj = table.get(tinydb.Query().audio.exists())
+
+        for i in range(len(audio_items)):
+            if audio_items[i][1] == value:
+                new_audio_index = i
+                break
+
+        logger.debug('Audio system changed to: "{}"'.format(audio_items[new_audio_index][0]))
+        table.update({'audio':value},doc_ids=[audioObj.doc_id])
+
+    spMenu.add.selector('Audio System: ', audio_items, onchange=change_audio, default=current_audio_index)
+
+    # Reward sensor
+    sensor = table.get(tinydb.Query().rSensor.exists())
+    current_sensor = sensor['rSensor']
+
+    sensor_items = [('No Sensor', 'None'),('AdaFruit', 'adafruit'),('SparkfunCustom','sparkfuncustom')]
+    for i in range(len(sensor_items)):
+        if sensor_items[i][1] == current_sensor:
+            current_sensor_index = i
+            break
+
+    def change_sensor(item,sensorval):
+        sensorObj = table.get(tinydb.Query().rSensor.exists())
+
+        for i in range(len(sensor_items)):
+            if sensor_items[i][1] == sensorval:
+                new_sensor_index = i
+                break
+
+        logger.debug('Reward sensor changed to {}'.format(sensor_items[new_sensor_index][0]))
+        table.update({'rSensor':sensorval},doc_ids=[sensorObj.doc_id])
+
+    spMenu.add.selector('IR Reward Sensor: ', sensor_items, onchange=change_sensor, default=current_sensor_index)
+
+    # Liquid Reward
+    liquid_reward = table.get(tinydb.Query().lReward.exists())
+    current_liquid_reward = liquid_reward['lReward']
+
+    liquid_reward_items = [('No Liquid Reward', 'None'),('Valve', 'leevalve'),('Pump','leepump')]
+    for i in range(len(liquid_reward_items)):
+        if liquid_reward_items[i][1] == current_liquid_reward:
+            current_liquid_reward_index = i
+            break
+
+    def change_liquid_reward(item,reward_value):
+        liquid_rewardObj = table.get(tinydb.Query().lReward.exists())
+
+        for i in range(len(liquid_reward_items)):
+            if liquid_reward_items[i][1] == reward_value:
+                new_liquid_reward_index = i
+                break
+
+        logger.debug('Liquid Reward changed to {}'.format(liquid_reward_items[new_liquid_reward_index][0]))
+        table.update({'lReward':reward_value},doc_ids=[liquid_rewardObj.doc_id])
+
+    spMenu.add.selector('Liquid Reward System: ', liquid_reward_items, onchange=change_liquid_reward, default=current_liquid_reward_index)
+
+    # Food Reward
+    food_reward = table.get(tinydb.Query().fReward.exists())
+    current_food_reward = food_reward['fReward']
+
+    food_reward_items = [('No food Reward', 'None')]
+    for i in range(len(food_reward_items)):
+        if food_reward_items[i][1] == current_food_reward:
+            current_food_reward_index = i
+            break
+
+    def change_food_reward(item,value):
+        food_rewardObj = table.get(tinydb.Query().fReward.exists())
+
+        for i in range(len(food_reward_items)):
+            if food_reward_items[i][1] == value:
+                new_food_reward_index = i
+                break
+
+        logger.debug('Food Reward changed to {}'.format(food_reward_items[new_food_reward_index][0]))
+        table.update({'fReward':value},doc_ids=[food_rewardObj.doc_id])
+
+    spMenu.add.selector('Food Reward System: ', food_reward_items, onchange=change_food_reward, default=current_food_reward_index)
+
+    add_close_button(spMenu)
+
+    spMenu.mainloop(surface)
+
 def settings_menu(surface):
 
     sMenu = initialize_menu('Settings')
+
+    table = touchDB.table('settings')
 
     def updateIP(Label, menu):
         Label.set_title('Ip : {}'.format(showip.getip()))
 
     IPLabel = sMenu.add.label('Ip')
     IPLabel.add_draw_callback(updateIP)
+    
+    def updateBatt(label, menu):
+        battery_msg = 'Battery  {:d} %,  Charging: {}'.format(battery.get_capacity(),battery.get_powered())
+        label.set_title(battery_msg)
+
+    battObj = table.get(tinydb.Query().battery.exists())['battery']
+    if battObj:
+        battery = Battery()
+        if battery.detect_battery():
+            BattLabel = sMenu.add.label('Battery')
+            BattLabel.add_draw_callback(updateBatt)
+        else:
+            ## mssg no battery detected
+            ## change state in database
+            pass
+
+
     sMenu.add.vertical_margin(20)
 
-    confirm_menu = shutdown_pi_menu()
-    vMenu = valve_menu()
-    irMenu = ir_menu()
-    sndMenu = sound_menu()
-    current_level = logging.getLogger().level
-    items = [('Regular', logging.INFO),('Debug', logging.DEBUG)]
-    for i in range(len(items)):
-        if items[i][1] == current_level:
-            current_level_index = i
-            break
+    liquid_reward = table.get(tinydb.Query().lReward.exists())['lReward']
+    if liquid_reward != 'None':
+        lr_menu = liquid_reward_menu(liquid_reward)
+        sMenu.add.button(lr_menu.get_title(),lr_menu)
 
-    def change_loglevel(item,level):
-        current = logging.getLogger().level
+#    food_reward = table.get(tinydb.Query().lReward.exists())['fReward']
+#    if food_reward != 'None':
+#        frMenu = foodReward_menu(food_reward)
+#        sMenu.add.button(frMenu.get_title(),frMenu)
 
-        if level == current:
-            pass
-        elif level == logging.DEBUG:
-            logging.getLogger().setLevel(level)
-            logger.debug('Debug logging mode activated')
-        elif level == logging.INFO:
-            logger.debug('Debug logging mode deactivated')
-            logging.getLogger().setLevel(level)
-        else:
-            logger.error('Wrong logging level assignment')
+    sensor = table.get(tinydb.Query().rSensor.exists())['rSensor']
+    if sensor != 'None':
+        irMenu = ir_menu(sensor)
+        sMenu.add.button(irMenu.get_title(),irMenu)
+    
+    audio = table.get(tinydb.Query().audio.exists())['audio']
+    if audio != 'None':
+        sndMenu = sound_menu(audio)
+        sMenu.add.button(sndMenu.get_title(),sndMenu)
 
-    sMenu.add.selector('Logging Level: ',items,onchange=change_loglevel,default=current_level_index)
-    sMenu.add.button(vMenu.get_title(),vMenu)
-    sMenu.add.button(irMenu.get_title(),irMenu)
-    sMenu.add.button(sndMenu.get_title(),sndMenu)
     sMenu.add.vertical_margin(10)
+    confirm_menu = shutdown_pi_menu()
     sMenu.add.button(confirm_menu.get_title(), confirm_menu)
 
     add_close_button(sMenu)
@@ -401,9 +597,46 @@ def piSynchronizeTime():
 
     return msg
 
+
+def initialize_hardware() -> None:
+
+    table = touchDB.table('settings')
+
+    batteryObj = table.get(tinydb.Query().battery.exists())
+    batt = batteryObj['battery']
+    if batt:
+        battery = Battery()
+        if not battery.detect_battery():
+            table.update({'battery':False},doc_ids=[batteryObj.doc_id])
+
+
+    sensor = table.get(tinydb.Query().rSensor.exists())['rSensor']
+    if sensor != 'None':
+        irSensor = IRSensor(variant=sensor)
+    
+    audio = table.get(tinydb.Query().audio.exists())['audio']
+    if audio != 'None':
+        sounddev = Sound(audio)
+
+    liquid_reward = table.get(tinydb.Query().lReward.exists())['lReward']
+    if liquid_reward != 'None':
+        liqrew = LiqReward(variant=liquid_reward)
+
+    hardware_initialized = True
+#    food_reward = table.get(tinydb.Query().lReward.exists())['fReward']
+#    if food_reward != 'None':
+#        foodrew = FoodReward(variant=food_reward)
+
+
 def initialize_logging():
-    # wait for time synchronization
-    msg = piSynchronizeTime()
+    table = touchDB.table('settings')
+    syncOpt = table.get(tinydb.Query().syncOn.exists())['syncOn']
+
+    if syncOpt:
+        # wait for time synchronization
+        msg = piSynchronizeTime()
+    else:
+        msg = 'Synchronizing time disabled'
 
     # Initialize logging
     formatDate='%Y/%m/%d@@%H:%M:%S'
@@ -413,7 +646,14 @@ def initialize_logging():
     userFormatter = logging.Formatter(fmt=userFormatStr,datefmt=formatDate)
 
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    logOpt = table.get(tinydb.Query().logDebugOn.exists())['logDebugOn']
+
+    if logOpt:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+
+    log.setLevel(level)
 
     now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
     os.makedirs(logPath,exist_ok=True)
@@ -438,7 +678,6 @@ def initialize_logging():
 
 def dbGetAll(subjectType):
 
-    touchDB = tinydb.TinyDB(touchDBFile)
     table = touchDB.table(subjectType)
 
     A = table.all()
@@ -448,9 +687,27 @@ def dbGetAll(subjectType):
     
     return nameList
 
+
+def database_init():
+    table = touchDB.table('settings')
+    initOpt =  table.get(tinydb.Query().init.exists())
+
+    if not initOpt:
+        table.insert({'init':True})
+        table.insert({'syncOn':True})
+        table.insert({'logDebugOn':True})
+        table.insert({'battery':False})
+        table.insert({'audio':'None'})
+        table.insert({'rSensor':'None'})
+        table.insert({'lReward':'None'})
+        table.insert({'fReward':'None'})
+    
+
 def main_menu():
     # Initializes pygame and logging
     pygame.init()
+    database_init()
+
     initialize_logging()
 
     logger.debug('Running in Raspberry PI = {}'.format(isRaspberryPI()))
@@ -465,11 +722,13 @@ def main_menu():
         sType = selector.get_id()
 
         if subject != '':
-            #global subjectss
-            touchDB = tinydb.TinyDB(touchDBFile)
             table = touchDB.table(sType)
             if table.search(tinydb.Query().name==subject):
-                print('already there')
+                items = selector.get_items()
+                for i in range(len(items)):
+                    if items[i][0] == subject:
+                        selector._index = i
+                logger.debug('Name already in database')
             else:
                 table.insert({'name':subject})
                 items = selector.get_items()
@@ -479,7 +738,6 @@ def main_menu():
 
     def delItems(selector):
         sType = selector.get_id()
-        touchDB = tinydb.TinyDB(touchDBFile)
         table = touchDB.table(sType)
         sIdx = selector.get_index()
         if sIdx > 0: # idx == 0 -> 'No Name'
@@ -493,7 +751,6 @@ def main_menu():
 
     def clearItems(selector):
         sType = selector.get_id()
-        touchDB = tinydb.TinyDB(touchDBFile)
         table = touchDB.table(sType)
         table.truncate()
         items = [('No Name',)]
@@ -519,10 +776,12 @@ def main_menu():
     frameE.pack(menu.add.button('Add', addItems, S2, surface), align='align-right')
     frameE.pack(S2, align='align-right')
 
-    menu.add.vertical_margin(30)
+    menu.add.vertical_margin(20)
     menu.add.button('Protocols', run_files_menu, menu, surface)
-    menu.add.vertical_margin(40)
+    menu.add.vertical_margin(30)
     menu.add.button('Settings', settings_menu,surface)
+    menu.add.vertical_margin(10)
+    menu.add.button('Special Settings', special_settings_menu,surface)
 
     # Allows menu to be run
     try:

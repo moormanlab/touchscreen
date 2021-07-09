@@ -1,6 +1,7 @@
 '''
 Mouse Touchscreen Program, Moorman Lab 2020 
 Code written by Jason Biundo, version 1.1 10/2020
+Updated by Ariel Burman, 04/2021
 
 This program utilizes the pygame library to create an interactive program that mice can 
 interact with on a touchscreen that is run by a Raspberry pi. This program is designed to 
@@ -18,15 +19,6 @@ white = (255,255,255)
 deepskyblue = (0,191,255)
 gray = (128,128,128)
  
-
-#Functions to add
-''' 
-- Add shapes (one function for each shape most likely, i.e circle, square, polygon)
-- Check collison - Done
-- Update screen?
--Play sound 
-'''
-
 import pygame
 from pygame.locals import (
     K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
@@ -35,19 +27,13 @@ import logging
 from hal import isRaspberryPI
 from return_to_menu import return_to_menu
 import time
-# Puts entire script into function to call in menu script
+
 class behavioral_test_base(BaseProtocol):
-
     def init(self):
-        self.sensor.setHandler(self.sensorHandler)
-    #buzz = Buzzer()
-    def sensorHandler(self):
+        self.sensor.set_handler(self.sensor_handler)
+
+    def sensor_handler(self):
         logging.info('Decide what to do when the IRbeam was broken')
-
-    #sensor = IRSensor(sensorHandler)
-    #valve = Valve()
-
-    # Import pygame.locals for easier access to key coordinates
 
     def check_collision(self, objectT, mouse_pos, color=(0,0,0)):
         '''
@@ -73,16 +59,16 @@ class behavioral_test_base(BaseProtocol):
         # Main loop, run until the user asks to quit
         while running:
         
-        # Fill the background with black
+            # Fill the background with black
             screen.fill(black)
-        #draw test shapes
+            #draw test shapes
             obj1 = pygame.draw.circle(screen, yellow, (75,250), 57)
             obj2 = pygame.draw.circle(screen, purple , (260, 250), 57)
             obj3 = pygame.draw.rect(screen, red, (400,200, 100,100))
             obj4 = pygame.draw.rect(screen, blue, (600,200, 125,100))
             objList = [obj1,obj2,obj3,obj4]
         
-        # Update  the display
+            # Update  the display
             pygame.display.flip()
 
             for event in pygame.event.get():
@@ -100,7 +86,7 @@ class behavioral_test_base(BaseProtocol):
                             self.check_collision(obj4,mouse_pos, blue) ):
                             self.sound.play()
                             #pygame.time.wait(1000) #pauses program for 1000ms for flash
-                            self.valve.drop()
+                            self.liqrew.drop()
 
                 if event.type == KEYDOWN: #escape from program
                     # Was it the Escape key? If so, stop the loop.
@@ -118,14 +104,13 @@ class behavioral_test_base(BaseProtocol):
 
 class behavioral_test_protocol(Protocol):
     def init(self):
-        self.setLoggerName('BehTest1')
+        self.set_log_filename('BehTest1')
         from hal import isRaspberryPI
         self.log('Running in Raspberry PI = {}'.format(isRaspberryPI()))
         self.log('Behavioral Test 1 Started')
 
-    def sensorHandler(self):
+    def sensor_handler(self):
         self.log('Decide what to do when the IRbeam was broken')
-
 
     def check_collision(self, objectT, mouse_pos, color=(0,0,0)):
         '''
@@ -167,23 +152,21 @@ class behavioral_test_protocol(Protocol):
                 self.check_collision(obj4,mouse_pos, blue) ):
                 self.sound.play()
                 #self.pause(1)
-                self.valve.drop()
+                self.liqrew.drop()
 
         return
 #
     def end(self):
         self.log('Finished')
-#
-#
-#
-#
+
+
 import time
 class operantConditioning(Protocol):
 
     def init(self):
-        self.setLoggerName('OpCond')
+        self.set_log_filename('OpCond')
         self.log('Operant Conditioning Started')
-        self.valve.setOpenTime(.02) # open time of valve, adjust as needed
+        self.liqrew.set_drop_amount(2) # drop amount, adjust as needed
         self.beamBroken = False
         self.beamTimer = 0
         #self.running = True
@@ -192,7 +175,7 @@ class operantConditioning(Protocol):
         self.rewardCount = 0
         self.screen.setBackcolor = (0,0,0)
 
-    def sensorHandler(self):
+    def sensor_handler(self):
         self.log('IRbeam was broken')
         self.beamBroken = True
         self.beamTimer = time.time()
@@ -231,7 +214,7 @@ class operantConditioning(Protocol):
                 # there is no reward but mouse is exploring
                 self.log('Mouse at well without reward')
     
-        if self.sensor.isPressed() == False:
+        if self.sensor.is_activated() == False:
             if self.mouseAtWell == True:
                 #mouse has left the well
                 self.timeAtWell = time.time() - self.beamTimer
@@ -249,7 +232,7 @@ class operantConditioning(Protocol):
                 self.log('Sound played')
                 self.screen.fill(gray)
                 self.screen.update()
-                self.valve.drop()
+                self.liqrew.drop()
                 self.rewardCount = self.rewardCount + 1
                 self.log('Reward given. Total = {:d}'.format(self.rewardCount))
                 self.rewardGiven = True
@@ -263,9 +246,9 @@ class operantConditioning(Protocol):
 
 class classicalConditioning(Protocol):
     def init(self):
-        self.setLoggerName('ClassCond')
+        self.set_log_filename('ClassCond')
         self.log('Classical Conditioning Started')
-        self.valve.setOpenTime(.05) # open time of valve, adjust as needed
+        self.liqrew.set_drop_amount(5) # drop amount of liquid reward, adjust as needed
         self.rewardGiven = False
         self.finishTrial = False
         self.sleepTime = 3
@@ -276,7 +259,7 @@ class classicalConditioning(Protocol):
         self.beamTimer = 0
 
 
-    def sensorHandler(self):
+    def sensor_handler(self):
         self.log('IRbeam was broken')
         self.beamBroken = True
         self.beamTimer = time.time()
@@ -302,11 +285,11 @@ class classicalConditioning(Protocol):
             self.log('Mouse has entered well')
             self.sound.play()
             self.log('Sound played')
-            self.valve.drop()
+            self.liqrew.drop()
             self.rewardCount += 1
             self.log('Reward given. Total = {:d}'.format(self.rewardCount))
     
-        if (self.mouseAtWell == True) and (self.sensor.isPressed() == False):
+        if (self.mouseAtWell == True) and (self.sensor.is_activated() == False):
             self.log('Mouse has left well')
             self.mouseAtWell = False
             self.finishTrial = True
