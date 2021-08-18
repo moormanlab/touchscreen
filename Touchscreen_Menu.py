@@ -13,7 +13,7 @@ import showip
 from keyboard import keyboard
 from return_to_menu import return_to_menu
 from hal import isRaspberryPI, LiqReward, IRSensor, Sound, Battery
-from utils import SCREENWIDTH, SCREENHEIGHT, getPosition
+from utils import SCREENWIDTH, SCREENHEIGHT, getPosition, LOGSEP
 
 import threading
 from server.app import app
@@ -667,10 +667,10 @@ def initialize_logging():
         msg = 'Synchronizing time disabled'
 
     # Initialize logging
-    formatDate='%Y/%m/%d@@%H:%M:%S'
-    sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
+    formatDate='%Y/%m/%d' + LOGSEP + '%H:%M:%S'
+    sysFormatStr = '%(asctime)s.%(msecs)03d' + LOGSEP + '%(name)s' + LOGSEP + '%(levelname)s' + LOGSEP + '%(message)s'
     sysFormatter = logging.Formatter(fmt=sysFormatStr,datefmt=formatDate)
-    userFormatStr = '%(asctime)s.%(msecs)03d@@%(message)s'
+    userFormatStr = '%(asctime)s.%(msecs)03d' + LOGSEP + '%(message)s'
     userFormatter = logging.Formatter(fmt=userFormatStr,datefmt=formatDate)
 
     log = logging.getLogger()

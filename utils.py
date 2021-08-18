@@ -20,6 +20,8 @@ tsColors = {
         'darkgray':    (  64,  64,  64),
         }
 
+LOGSEP = '@@'
+
 def getPosition(event):
     if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP]:
         return event.pos

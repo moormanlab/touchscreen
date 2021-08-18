@@ -11,6 +11,12 @@ import os
 #configure_uploads(app, protocols)
 from flask_uploads import UploadSet, configure_uploads
 
+
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+
 app = Flask(__name__)
 protocols = UploadSet('protocols', extensions=('py'))
 app.config['UPLOADED_PROTOCOLS_DEST'] = 'protocols'
@@ -20,9 +26,12 @@ import flaskcode
 
 app.config.from_object(flaskcode.default_config)
 app.config['FLASKCODE_RESOURCE_BASEPATH'] = 'protocols'
+app.config['FLASKCODE_ALLOWED_EXTENSIONS'] = 'py'
 app.register_blueprint(flaskcode.blueprint, url_prefix='/editor')
 
 configure_uploads(app, protocols)
+
+LOGSEP = '@@'
 
 def make_tree(path):
     tree = dict(name=path, children=[])
@@ -128,7 +137,9 @@ def logmanager():
             elif request.form['actionFile'] == 'view':
                 filename = request.form['file']
                 assert os.path.isfile(os.path.join(path,filename))
-                return render_template('viewlog.html',d=dict(filename=filename))
+                #return render_template('viewlog.html',d=dict(filename=filename))
+                return redirect(url_for('viewlog',filename=filename))
+                #return logfiles(filename)
             elif request.form['actionFile'] == 'download':
                 filename = request.form['file']
                 fullpath = os.path.join(os.path.abspath(path),filename)
@@ -138,21 +149,85 @@ def logmanager():
             else:
                 app.logger.info('file {} action {}'.format(request.form['file'],request.form['actionFile'])) 
     ptree,stree = make_tree_log(LOGPATH)
-    return render_template('logmanager.html', ptree=ptree,stree=stree)
+    return render_template('logmanager.html', ptree=ptree, stree=stree)
 
-import math, time
-@app.route('/viewlogf/<filename>')
-def viewlogf(filename):
+
+def get_field(line):
+    linesplit = line.split(sep=LOGSEP)
+    if len(linesplit)>2:
+        field = linesplit[2]
+    else:
+        field = None
+    return field
+
+def get_all_fields(filename):
+    fields = []
     path = os.path.expanduser(LOGPATH)
-    def inner():
+    with open(os.path.join(path,filename),'r') as f:
+        for line in f:
+            field = get_field(line)
+            if field and (field not in fields):
+                fields.append(field)
+    fdic = [dict(name=field, checked=False) for field in fields]
+    return fdic
+
+@app.route('/viewlog/<filename>', methods=['GET', 'POST'])
+def viewlog(filename, fields = None):
+    if request.method == 'POST':
+        app.logger.info(request.form)
+        if fields is None:
+            fields = get_all_fields(filename)
+        app.logger.debug('fields to be used')
+        app.logger.debug(fields)
+        for value in request.form.getlist('fields'):
+            app.logger.debug(value)
+            for d in fields:
+                if d['name'] == value:
+                    d['checked']=True
+                    break
+        app.logger.debug('fields to send')
+        app.logger.debug(fields)
+        return render_template('viewlog.html',d=dict(filename=filename,fields=fields))
+    else:
+        fields = get_all_fields(filename)
+        return render_template('viewlog.html',d=dict(filename=filename, fields=fields))
+
+import time
+@app.route('/viewlogf/<filename>')
+def viewlogf(filename,fields):
+    path = os.path.expanduser(LOGPATH)
+    checkedfields = []
+    app.logger.debug('fields')
+    app.logger.debug(fields)
+    app.logger.debug(type(fields))
+    for f in fields:
+        print(f)
+        app.logger.debug(f)
+        if f['checked']:
+            checkedfields.append(f['name'])
+
+    def inner(fields=None):
         # simulate a long process to watch
         with open(os.path.join(path,filename), 'r') as f:
             while True:
                 lines=f.readlines()
                 for line in lines:
-                    yield  str(escape(line)) + '<br/>\n'
+                    field = get_field(line)
+                    if not fields or (field in fields):
+                        linesep = line.split(sep=LOGSEP)
+                        msg = ''
+                        for i in linesep:
+                            msg += i
+                            msg += '\t'
+                        yield  str(escape(msg)) + '<br/>\n'
                 time.sleep(5)
-    return Response(inner(), mimetype='text/html')
+
+
+    
+    #return 'hola'+str(fields)
+    #Response(inner(fields), mimetype='text/html')
+    app.loggger.debug(checkedfields)
+    return Response(inner(checkedfields), mimetype='text/html')
     
 #@app.route('/viewlog2')
 #def viewlog2():
@@ -173,7 +248,7 @@ def viewlogf(filename):
 
 @app.route('/editor/<filename>')
 def editor(filename):
-    return 'Editing file'
+    return render_template('edit',filename)
 
 @app.route('/favicon.ico')
 def favicon():

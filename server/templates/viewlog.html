@@ -1,17 +1,27 @@
 <!doctype html>
+<html lang=en>
 <head>
+<meta charset=utf-8>
 <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}" />
 <title>Log viewer</title>
 </head>
 
 <h1>Log Viewer</h1>
 
+<body>
+<p><a href={{ url_for('logmanager') }}>Back</a></p>
 <p> Filename: {{d.filename}} </p> 
 
-<body>
-    <div>
-        <iframe frameborder="0" noresize="noresize"
-     style='background: transparent; width: 100%; height:100%;' src="{{ url_for('viewlogf', filename=d.filename)}}"></iframe>
-    </div>
+<form method=POST enctype=multipart/form-data action="{{ url_for('viewlog', filename=d.filename, fields=d.fields) }}">
+  {%- for item in d.fields recursive %}
+  <input type="Checkbox" name="fields" value="{{item.name}}" {% if item.checked %} Checked {% endif %}> {{ item.name }}
+  {%- endfor %}
+<input type="submit" value="Submit">
+</form>
+<div>
+    <iframe frameborder="0" height="800" 
+ style='background: transparent; width: 100%;' src="{{ url_for('viewlogf', filename=d.filename, fields=d.fields) }}"></iframe>
+</div>
 </body>
 
+</html>
