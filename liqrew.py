@@ -90,7 +90,7 @@ class LeeValve(LiquidRewardTempl):
         return 'Drop open time:  {:03d} ms'.format(self.get_drop_amount()*10)
 
 #####################################################
-## Lee Valve
+## Lee Pump 12/24 V micro dose
 #####################################################
 class LeePump(LiquidRewardTempl):
     def __init__(self, drop_amount: int = 1):
@@ -122,6 +122,11 @@ class LeePump(LiquidRewardTempl):
         return 'Drop amount:  {:03d} ul'.format(self.drop_amount*10)
 
 if __name__=='__main__':
+    logging.basicConfig(filename='logs/liqrewtest.log', filemode='w+', level=logging.DEBUG,
+            format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s',
+            datefmt='%Y/%m/%d||%H:%M:%S'
+            )
+    logger.info('Liquid Reward Test')
     val = LeeValve()
     val.open()
     time.sleep(.5)
@@ -133,7 +138,16 @@ if __name__=='__main__':
 
     pump = LeePump()
     pump.open()
-    time.sleep(.5)
+    time.sleep(5)
+    pump.close()
+    pump.set_drop_amount(2)
+    pump.drop()
+    print('a b a {}'.format(pump))
+    pump._close()
+
+    pump = LeePump2()
+    pump.open()
+    time.sleep(5)
     pump.close()
     pump.set_drop_amount(2)
     pump.drop()

@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from arch import isRaspberryPI
 
 logger = logging.getLogger('HALBattery')
-DEFAULTPORT = '/dev/ttyAMA0'
+DEFAULTPORT = '/dev/serial0'
 DEFAULTIOPIN = 17
 
 pf = None if isRaspberryPI() else MockFactory()
@@ -35,7 +35,7 @@ class BatteryTemplate(ABC):
     def _log_thread(self):
         while self.connected:
             self.log_data()
-            time.sleep(10)
+            time.sleep(60)
 
     def update_data(self):
         '''
@@ -45,8 +45,11 @@ class BatteryTemplate(ABC):
 
     def _update_thread(self):
         while self.connected:
+            power = self.powered
             self.update_data()
-            time.sleep(1)
+            if self.powered == (not power):
+                self.log_data()
+            time.sleep(5)
 
     def _close(self):
         ''' close instance '''
@@ -114,17 +117,27 @@ class UPSV3P2Bat(BatteryTemplate):
                     logger.debug('Shutdown check disabled')
                     return False
 
-            while self.serial.inWaiting() > 4000:
-                tmp = self.serial.read(4000)
-            while self.serial.inWaiting() < 100:
-                time.sleep(.1)
-            uart_string = self.serial.read(self.serial.inWaiting())
-            data = uart_string.decode('ascii','ignore')
-
             try:
+                data = ''
+                while self.serial.inWaiting() > 4000:
+                    tmp = self.serial.read(4000)
+                a = 10
+                while self.serial.inWaiting() < 100:
+                    if a == 10:
+                        b = self.serial.inWaiting()
+                    if a == 0:
+                        if self.serial.inWaiting() == b:
+                            raise ValueError('No data waiting to be readed')
+                        else:
+                            a = 10
+                    time.sleep(.1)
+                    a -= 1
+                uart_string = self.serial.read(self.serial.inWaiting())
+                data = uart_string.decode('ascii','ignore')
+
                 result = re.findall('\$ (.*?) \$',data)[-1]
             except:
-                logger.debug('Battery connection data corrupted, disconnecting')
+                logger.exception('Battery connection data corrupted, disconnecting')
                 logger.debug(data)
                 self.gpio.when_activated = None
                 logger.debug('Shutdown check disabled')
@@ -257,7 +270,7 @@ if __name__ == '__main__':
     from pygame.locals import K_ESCAPE, KEYDOWN, QUIT
     pygame.init()
     screen = pygame.display.set_mode((300,300))
-    logging.basicConfig(filename='battery.log', filemode='w+', level=logging.DEBUG,
+    logging.basicConfig(filename='logs/battery.log', filemode='w+', level=logging.DEBUG,
             format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s',
             datefmt='%Y/%m/%d||%H:%M:%S'
             )

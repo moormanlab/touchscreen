@@ -1,6 +1,6 @@
 import time
 import logging
-from gpiozero import TonalBuzzer, Buzzer
+from gpiozero import TonalBuzzer, Buzzer, PWMOutputDevice 
 from gpiozero.tones import Tone
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 import pygame
@@ -17,7 +17,7 @@ pf = None if isRaspberryPI() else MockFactory(pin_class=MockPWMPin)
 logger = logging.getLogger('halSound')
 
 #audioPin = 17
-buzzerPIN = 6
+buzzerPIN = 12
 
 class tTone(object):
     def __init__(self, frequency: int, duration: float = 1.0, amplitude: float = 1.0):
@@ -105,9 +105,7 @@ class AudioDevTemplate(ABC):
 ######################################################
 class SparkFunBuzzer(AudioDevTemplate):
     def __init__(self):
-        self.bz = TonalBuzzer(buzzerPIN, pin_factory = pf)
-        #print(Tone(self.bz.max_tone).real)
-
+        self.bz =  PWMOutputDevice(buzzerPIN, pin_factory = pf)
 
     def play(self, tone: tTone = None, frequency: int = 440, duration: float = 1.0, amplitude: float = 1.0):
         if not (tone and isinstance(tone,tTone)):
@@ -116,11 +114,12 @@ class SparkFunBuzzer(AudioDevTemplate):
         else:
             frequency = tone.get_frequency()
             duration = tone.get_duration()
-        tone = Tone(frequency)
+            amplityde = tone.get_amplitude()
+        self.bz.frequency = frequency
         logger.info('Buzzer Tone frequency = {:4.3f}, duration = {:4.4f}'.format(frequency,duration))
-        self.bz.play(tone)
+        self.bz.value = .5*amplitude
         time.sleep(float(duration))
-        self.bz.stop()
+        self.bz.value = 0
 
     def playTune(self,tune):
         logger.info('Buzzer playing custom tune')
@@ -129,12 +128,13 @@ class SparkFunBuzzer(AudioDevTemplate):
 
     def _close(self):
         self.bz.close()
-
+        
 ######################################################
 ## Speaker
 ## https://www.sparkfun.com/products/11089
+## https://www.digikey.com/en/products/detail/cui-devices/CMS-151125-078L100/8581913
 ######################################################
-class SparkfunCustomSpeaker(AudioDevTemplate):
+class CustomSpeaker(AudioDevTemplate):
     def __init__(self):
         super().__init__()
 
@@ -146,24 +146,15 @@ class SparkfunCustomSpeaker(AudioDevTemplate):
     def _close(self):
         pass
 
-################################################################
-## AudioHat
-## https://forum.raspiaudio.com/t/ultra-installation-guide/21
-## https://www.amazon.com/gp/product/B07B3WYMN8
-################################################################
-class AudioHatPro(AudioDevTemplate):
-
-    def playTune(self,tune):
-        logger.info('Audio hat playing custom tune')
-        for note, duration in tune:
-            self.play(frequency=note,duration=duration)
-
-    def _close(self):
-        pass
 
 if __name__=='__main__':
+    logging.basicConfig(filename='soundtest.log', filemode='w+', level=logging.DEBUG,
+            format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s',
+            datefmt='%Y/%m/%d||%H:%M:%S'
+            )
+    logger.info('Sound Test')
     buzz = SparkFunBuzzer()
-    #buzz = SparkfunCustomSpeaker()
+    #buzz = CustomSpeaker()
 
     buzz.play(1000,duration=2.0)
     buzz.set_amplitude(.3)

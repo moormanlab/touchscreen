@@ -1,5 +1,4 @@
 from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED
-import touchscreen_protocol as ts
 
 red = (255,0,0)
 
@@ -10,6 +9,8 @@ class Test1(BaseProtocol):
     It should control the main loop and the surface at all time.
 
     In the example when the pointer collides with the box it will end the training
+    There are three method for the control sequence: 'init', 'main' and 'end'.
+    Only 'main is mandatory
     '''
 
     def init(self):
@@ -60,11 +61,12 @@ class TestingTouch(Protocol):
     '''
         This training protocol will deliver reward anytime the mouse touches the screen.
         A small circle is drawn where there is an interaction with the screen.
-        This protocol only ends using the built in quiting procedure: touch in the upper left corner and slide up the upper right corner.
+        This protocol only ends using the built-in quiting procedure: touch in the upper 
+        left corner and slide up to the upper right corner.
     '''
     def init(self):
         self.sensor.set_handler(self.sensor_handler)
-        self.liqrew.set_drop_amount(2)
+        self.liqrew.set_drop_amount(5)
         self.pressed = False
         self.lastposition = 0
         self.log('Test Started')
@@ -85,12 +87,14 @@ class TestingTouch(Protocol):
             self.liqrew.drop()
             self.log('pointer pressed at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
+
         elif event.type == POINTERMOTION:
             self.lastposition = event.position
             self.log('pointer moving')
 
         elif event.type == POINTERRELEASED:
             self.pressed = False
+            #self.liqrew.close()
             self.lastposition = 0
             self.log('pointer released at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
@@ -102,8 +106,10 @@ class TestingTouch(Protocol):
         self.log('ended training')
 
 
-#This Test will not be loaded because it is missing correct inheritance
 class Test(object):
-
+    '''
+       This Test will not be loaded because it is missing correct inheritance.
+       Either 'Protocol' or 'BaseProtocol'
+    '''
     def init(self):
         pass

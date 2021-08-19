@@ -52,15 +52,15 @@ class Rectangle(Shape):
             return False
 
 class nPolygon(Shape):
-    def __init__(self,surface,color,N,center,radius,rotation,width=1):
+    def __init__(self,surface,color,n_sides,center,radius,rotation,width=1):
         Shape.__init__(self,surface,POLYGON,color)
         self.center = center
         self.radius = radius
-        self.N = N
+        self.N = n_sides
         self.points = []
-        for i in range(N):
-            x = int(math.sin(TAU/N*i+(rotation+180)/360*TAU) * radius + center[0])
-            y = int(math.cos(TAU/N*i+(rotation+180)/360*TAU) * radius + center[1])
+        for i in range(self.N):
+            x = int(math.sin(TAU/self.N*i+(rotation+180)/360*TAU) * radius + center[0])
+            y = int(math.cos(TAU/self.N*i+(rotation+180)/360*TAU) * radius + center[1])
             self.points.append((x,y))
 
     def draw(self):
@@ -88,8 +88,8 @@ class Draw(object):
         self.shape.draw()
         return self.shape
 
-    def polygon(self,color,N,center,radius,rotation=0):
-        self.shape = nPolygon(self.surface,color,N,center,radius,rotation)
+    def polygon(self,color,n_sides,center,radius,rotation=0):
+        self.shape = nPolygon(self.surface,color,n_sides,center,radius,rotation)
         self.shape.draw()
         return self.shape
 

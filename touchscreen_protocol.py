@@ -7,6 +7,7 @@ from keyboard import keyboard
 from utils import POINTERPRESSED, POINTERMOTION, POINTERRELEASED, getPosition, tsColors
 from return_to_menu import return_to_menu
 import shapes
+from sound import tTone
 
 logger = logging.getLogger('TouchProtocols')
 
@@ -135,6 +136,7 @@ class Protocol(BaseProtocol):
         super().__init__(surface, subject, experimenter)
         self.screen = Protocol.Screen(surface,backcolor)
         self.draw = shapes.Draw(surface)
+        self._archpi = isRaspberryPI()
         self._type = 'Protocol'
         self._exit = False
         self._fps = 60

@@ -14,9 +14,9 @@ logger = logging.getLogger('touchHAL')
 gpio pins used by different hardware
 
 audio:
-audiohat (fixed): 2 (i2c sda), 3 (i2c scl), 25 (led), 19 (i2s lrclk), 18 (i2s clk), 20 (i2s adc), 21 (i2s dac), 23 (button)
-buzzer   (flexible): 6 (+), GND (-) 
+buzzer   (flexible): 12 (+), GND (-) 
 speakers (fixed): (3.5 mm audio jack)
+audiohat (fixed): 2 (i2c sda), 3 (i2c scl), 25 (led), 19 (i2s lrclk), 18 (i2s clk), 20 (i2s adc), 21 (i2s dac), 23 (button)
 
 sensors:
 adafruit/sparkfun (flexible): 3.3V, GND, 4 (input)
@@ -35,12 +35,12 @@ food reward:
 ########################################
 ## Sound
 ########################################
-from sound import SparkFunBuzzer, SparkfunCustomSpeaker, AudioHatPro
+from sound import SparkFunBuzzer, CustomSpeaker
 class Sound():
 
-    #__arch = isRaspberryPI()
     __instance = None
     __variant = None
+    __items = [('No Audio', 'None'),('Buzzer', 'spkfbuzzer'),('Speaker','custspk')]
     
     def __init__(self, variant=None):
         '''
@@ -57,16 +57,13 @@ class Sound():
             Sound.__variant = None
 
         if Sound.__instance is None:
-            #if Sound.__arch == True and variant is not None:
             if variant is not None:
                 if variant == 'spkfbuzzer':
                     Sound.__instance = SparkFunBuzzer()
-                elif variant == 'spkfcustspk':
-                    Sound.__instance = SparkfunCustomSpeaker()
-                elif variant == 'raspiaudio':
-                    Sound.__instance = AudioHatPro()
+                elif variant == 'custspk':
+                    Sound.__instance = CustomSpeaker()
                 else:
-                    raise ValueError('Audio device not recognized')
+                    raise ValueError('Audio device "{}" not recognized'.format(variant))
                 Sound.__variant = variant
             else:
                 raise ValueError('Audio device not specified')
@@ -91,6 +88,8 @@ class Sound():
     #    logger.info('Buzzer playing custom tune')
     #    self.__instance.playTune(tune)
 
+    def get_items():
+        return Sound.__items
 
 ########################################
 ## IR Reward Sensor
@@ -98,9 +97,9 @@ class Sound():
 from sensor import AdafruitSensor, SparkfunCustomIrSensor
 class IRSensor(object):
 
-    #__arch = isRaspberryPI()
     __instance = None
     __variant = None
+    __items = [('No Sensor', 'None'),('AdaFruit', 'adafruit'),('SparkfunCustom','sparkfuncustom')]
 
     def __init__(self,handler=None,variant=None):
         ''' 
@@ -117,14 +116,13 @@ class IRSensor(object):
             IRSensor.__variant = None
 
         if IRSensor.__instance is None:
-            #if IRSensor.__arch == True and variant is not None:
             if variant is not None:
                 if variant == 'adafruit':
                     IRSensor.__instance=AdafruitSensor(handler)
                 elif variant == 'sparkfuncustom':
                     IRSensor.__instance=SparkfunCustomIrSensor(handler)
                 else:
-                    raise ValueError('Sensor device not recognized')
+                    raise ValueError('Sensor device "{}" not recognized'.format(variant))
                 IRSensor.__variant = variant
             else:
                 raise ValueError('Sensor device not specified')
@@ -167,8 +165,9 @@ class IRSensor(object):
 #        if IRSensor.__instance:
 #            IRSensor.__instance._close()
 #            IRSensor.__instance = None
-#
 
+    def get_items():
+        return IRSensor.__items
 
 ########################################
 ## Liquid Reward
@@ -178,6 +177,7 @@ from liqrew import LeeValve, LeePump
 class LiqReward(object):
     __instance = None
     __variant = None
+    __items = [('No Liquid Reward', 'None'),('Valve', 'leevalve'),('Pump','leepump')]
 
     def __init__(self, drop_amount: int = 1, variant: str = None):
         ''' if there is no instance create one.
@@ -198,6 +198,8 @@ class LiqReward(object):
                     LiqReward.__instance = LeeValve(drop_amount)
                 elif variant == 'leepump':
                     LiqReward.__instance = LeePump(drop_amount)
+                else:
+                    raise ValueError('Liquid Reward Device "{}" not recognized'.format(variant))
                 LiqReward.__variant = variant
             else:
                 raise ValueError('Liquid Reward Variant needs to be specified')
@@ -215,6 +217,8 @@ class LiqReward(object):
     def __str__(self):
         if LiqReward.__instance:
             return self.__instance.__str__()
+        else:
+            return 'No liqreward instance'
 
     def set_drop_amount(self, drop_amount: int):
         if LiqReward.__instance:
@@ -252,6 +256,9 @@ class LiqReward(object):
 #        if self.__instance:
 #            self.__instance._close()
 
+    def get_items():
+        return LiqReward.__items
+
 ############
 # Battery
 ############
@@ -264,6 +271,7 @@ class Battery(object):
     def __init__(self, variant = None):
         if Battery.__instance is None:
             Battery.__instance = UPSV3P2Bat()
+            logger.debug('New battery instance created')
 
     def __getattr__(self, attr):
         """ Delegate access to implementation """
@@ -279,6 +287,11 @@ class Battery(object):
             Battery.__instance = None
 
 if __name__=='__main__':
+    logging.basicConfig(filename='logs/haltest.log', filemode='w+', level=logging.DEBUG,
+            format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s',
+            datefmt='%Y/%m/%d||%H:%M:%S'
+            )
+    logger.info('HAL Test')
     val = LiqReward()
     val.open()
     time.sleep(.5)

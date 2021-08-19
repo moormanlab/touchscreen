@@ -50,7 +50,7 @@ def initialize_menu(title):
     return menu
 
 
-def window_message(message):
+def window_message(surface, message):
     menu = pygame_menu.Menu('Warning', int(SCREENWIDTH *.75), int(SCREENHEIGHT * .75),
                             theme = pygame_menu.themes.THEME_DARK,
                             onclose = pygame_menu.events.RESET,
@@ -62,7 +62,8 @@ def window_message(message):
     menu.add.label(message)
     add_close_button(menu)
     
-    return menu
+    menu.mainloop(surface, fps_limit=30)
+    return
 
 def import_protocols(filename,surface):
     # Imports file as a module (excludes .py extension)
@@ -75,8 +76,7 @@ def import_protocols(filename,surface):
     except Exception:
         msg = 'Exception when importing file: \n\{}.\nCheck logfile to see details'.format(filename)
         logger.exception('Exception when importing file {}'.format(filename))
-        wm = window_message(msg) #TODO add an error message in the screen
-        wm.mainloop(surface)
+        window_message(surface, msg)
         classes = []
 
     return classes
@@ -106,8 +106,7 @@ def protocol_run(protocol, surface, data):
     except Exception:
         msg = 'Exception running protocol  \n\t \'{}\'.\nCheck logfile to see details'.format(protocol.__name__)
         logger.exception('Exception running protocol {}'.format(protocol.__name__))
-        wm = window_message(msg) #TODO add an error message in the screen
-        wm.mainloop(surface)
+        window_message(surface, msg)
 
     return
 
@@ -137,7 +136,7 @@ def function_menu(filename,data,surface):
 
     add_close_button(fMenu)
 
-    fMenu.mainloop(surface)
+    fMenu.mainloop(surface, fps_limit=30)
 
 
 def scan_directory(dirPath):
@@ -170,7 +169,7 @@ def files_menu(data, surface):
     
     add_close_button(pMenu)
 
-    pMenu.mainloop(surface)
+    pMenu.mainloop(surface, fps_limit=30)
 
 
 def shutdown_pi_menu():
@@ -201,6 +200,7 @@ def shutdown_pi_menu():
 def liquid_reward_menu(liqrewdev):
 
     lr_menu = initialize_menu('Liquid Reward')
+    logger.debug('variant selected = {}'.format(liqrewdev))
 
     liqrew = LiqReward(variant=liqrewdev)
 
@@ -228,6 +228,7 @@ def liquid_reward_menu(liqrewdev):
         logger.info('set switch status')
         switch.set_value(False)
 
+    logger.debug('liqrew {}'.format(liqrew))
     T1 = lr_menu.add.toggle_switch('Valve State:', False, state_text=('Closed', 'Open'), onchange=control, single_click=True)
     lr_menu.add.vertical_margin(30)
     lr_menu.add.button('Give Drop', valveDrop, T1)
@@ -279,37 +280,47 @@ def ir_menu(sensor):
 def sound_menu(audio):
 
     class Params:
-        def __init__(self, frec: int, duration: float):
-            self.frec = int(frec)
+        def __init__(self, frequency: int, duration: float, amplitude: float):
+            self.frequency = int(frequency)
             self.duration = float(duration)
+            self.amplitude = float(amplitude)
 
-    params = Params(440,1.0)
+    params = Params(440, 1.0, 1.0)
     sndMenu = initialize_menu('Sound')
 
     sounddev = Sound(audio)
 
     def increase_frequency(label, amount: int):
-        params.frec += amount
-        label.set_title('{:>5d} Hz'.format(params.frec))
+        params.frequency += amount
+        label.set_title('{:>5d} Hz'.format(params.frequency))
 
     def decrease_frequency(label, amount: int):
-        if params.frec - amount >= 10:
-            params.frec -= amount
-            label.set_title('{:>5d} Hz'.format(params.frec))
+        if params.frequency - amount >= 10:
+            params.frequency -= amount
+            label.set_title('{:>5d} Hz'.format(params.frequency))
 
     def increase_duration(label):
         params.duration = params.duration + 0.1
         label.set_title('     {:2.1f} s'.format(params.duration))
 
     def decrease_duration(label):
-        if params.duration > .1:
+        if params.duration > .15:
             params.duration = params.duration - 0.1
             label.set_title('     {:2.1f} s'.format(params.duration))
 
-    def playsnd():
-        sounddev.play(frequency = params.frec, duration = params.duration)
+    def increase_amplitude(label):
+        params.amplitude = params.amplitude + 0.1
+        label.set_title('     {:2.1f}  '.format(params.amplitude))
 
-    labelF = sndMenu.add.label('{:>5d} Hz'.format(params.frec))
+    def decrease_amplitude(label):
+        if params.amplitude > .07:
+            params.amplitude = params.amplitude - 0.05
+            label.set_title('     {:2.1f}  '.format(params.amplitude))
+
+    def playsnd():
+        sounddev.play(frequency = params.frequency, duration = params.duration, amplitude = params.amplitude)
+
+    labelF = sndMenu.add.label('{:>5d} Hz'.format(params.frequency))
     frameF = sndMenu.add.frame_h(700,58)
     #frameF._relax = True
     frameF.pack(sndMenu.add.label('Frequency: '), align = pygame_menu.locals.ALIGN_CENTER)
@@ -323,7 +334,7 @@ def sound_menu(audio):
     frameF.pack(sndMenu.add._horizontal_margin(5), align = pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add.button('  --  ', decrease_frequency, labelF, 100, border_width=2), align = pygame_menu.locals.ALIGN_CENTER)
 
-    labelT = sndMenu.add.label('     {:2.1f} s'.format(params.duration))
+    labelT = sndMenu.add.label('     {:2.1f}  '.format(params.duration))
     frameT = sndMenu.add.frame_h(600,58)
     frameT.pack(sndMenu.add.label('   Duration:'), align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(labelT, align = pygame_menu.locals.ALIGN_CENTER)
@@ -331,6 +342,16 @@ def sound_menu(audio):
     frameT.pack(sndMenu.add.button(' + ', increase_duration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) # \u2795
     frameT.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(sndMenu.add.button('  -  ', decrease_duration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) #\u2796
+
+    labelA = sndMenu.add.label('     {:2.1f} s'.format(params.amplitude))
+    frameA = sndMenu.add.frame_h(600,58)
+    frameA.pack(sndMenu.add.label('   Amplitude:'), align = pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(labelA, align = pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(sndMenu.add.button(' + ', increase_amplitude, labelA, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) # \u2795
+    frameA.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(sndMenu.add.button('  -  ', decrease_amplitude, labelA, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) #\u2796
+
     sndMenu.add.button('Play Sound',playsnd)
 
     add_back_button(sndMenu)
@@ -383,9 +404,8 @@ def special_settings_menu(surface):
                 logger.debug('Battery connected')
             else:
                 msg = 'Battery not detected'
-                wm = window_message(msg)
                 logger.debug(msg)
-                wm.mainloop(surface)
+                window_message(surface, msg)
                 T1.set_value(False)
         else:
             bat.disconnect()
@@ -401,7 +421,8 @@ def special_settings_menu(surface):
     audioObj = table.get(tinydb.Query().audio.exists())
     current_audio = audioObj['audio']
 
-    audio_items = [('No Audio', 'None'),('Buzzer', 'spkfbuzzer'),('Speaker','spkfcustspk'),('RaspiAudio','raspiaudio')]
+    audio_items = Sound.get_items()
+    current_audio_index = 0
     for i in range(len(audio_items)):
         if audio_items[i][1] == current_audio:
             current_audio_index = i
@@ -424,7 +445,8 @@ def special_settings_menu(surface):
     sensor = table.get(tinydb.Query().rSensor.exists())
     current_sensor = sensor['rSensor']
 
-    sensor_items = [('No Sensor', 'None'),('AdaFruit', 'adafruit'),('SparkfunCustom','sparkfuncustom')]
+    sensor_items = IRSensor.get_items()
+    current_sensor_index = 0
     for i in range(len(sensor_items)):
         if sensor_items[i][1] == current_sensor:
             current_sensor_index = i
@@ -447,7 +469,8 @@ def special_settings_menu(surface):
     liquid_reward = table.get(tinydb.Query().lReward.exists())
     current_liquid_reward = liquid_reward['lReward']
 
-    liquid_reward_items = [('No Liquid Reward', 'None'),('Valve', 'leevalve'),('Pump','leepump')]
+    liquid_reward_items = LiqReward.get_items()
+    current_liquid_reward_index = 0
     for i in range(len(liquid_reward_items)):
         if liquid_reward_items[i][1] == current_liquid_reward:
             current_liquid_reward_index = i
@@ -471,6 +494,7 @@ def special_settings_menu(surface):
     current_food_reward = food_reward['fReward']
 
     food_reward_items = [('No food Reward', 'None')]
+    current_food_reward_index = 0
     for i in range(len(food_reward_items)):
         if food_reward_items[i][1] == current_food_reward:
             current_food_reward_index = i
@@ -491,7 +515,7 @@ def special_settings_menu(surface):
 
     add_close_button(spMenu)
 
-    spMenu.mainloop(surface)
+    spMenu.mainloop(surface, fps_limit=30)
 
 def settings_menu(surface):
 
@@ -549,7 +573,7 @@ def settings_menu(surface):
 
     add_close_button(sMenu)
 
-    sMenu.mainloop(surface)
+    sMenu.mainloop(surface, fps_limit=30)
 
 
 def create_surface():
@@ -785,7 +809,7 @@ def main_menu():
 
     # Allows menu to be run
     try:
-        menu.mainloop(surface)
+        menu.mainloop(surface, fps_limit=30)
     except Exception:
         logger.exception('Exception running mainloop')
 

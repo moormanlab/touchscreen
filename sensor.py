@@ -130,6 +130,11 @@ class SparkfunCustomIrSensor(SensorTempl):
 
 if __name__=='__main__':
     import pygame
+    logging.basicConfig(filename='logs/sensortest.log', filemode='w+', level=logging.DEBUG,
+            format='%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s',
+            datefmt='%Y/%m/%d||%H:%M:%S'
+            )
+    logger.info('Sensors Test')
     pygame.init()
     screen = pygame.display.set_mode((300,300))
     time.sleep(1)
