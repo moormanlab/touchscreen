@@ -2,7 +2,7 @@
 Encoding=UTF-8
 Type=Application
 Name=MiceTSMenu
-Icon=/home/pi/touchscreen/mouse.xpm
-Exec=/home/pi/touchscreen/runTouchscreen.sh
+Icon=/home/pi/touchscreen/scripts/mouse.xpm
+Exec=/home/pi/touchscreen/scripts/runTouchscreen.sh
 Comment[en_US]=Mouse Touchscreen Training
 Categories=Utility

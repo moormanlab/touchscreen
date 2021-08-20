@@ -519,6 +519,23 @@ def special_settings_menu(surface):
 
     spMenu.add.selector('Food Reward System: ', food_reward_items, onchange=change_food_reward, default=current_food_reward_index)
 
+    def update_software():
+        logger.info('Updating software')
+        if isRaspberryPI():
+            ret = subprocess.call(['scripts/update.sh'])
+            if ret == 0:
+                msg = 'Software updated successfully.\nA system restart is needed'
+            else:
+                msg = 'Software update was unsuccessful.\nCheck system log file'
+        else:
+            msg = 'Running in PC, manual update required.\nRun "git pull"'
+
+        logger.debug(msg)
+        window_message(surface, msg)
+    
+    spMenu.add.vertical_margin(5)
+    spMenu.add.button('Update Software',update_software)
+
     add_close_button(spMenu)
 
     spMenu.mainloop(surface, fps_limit=30)
@@ -809,9 +826,9 @@ def main_menu():
     menu.add.vertical_margin(20)
     menu.add.button('Protocols', run_files_menu, menu, surface)
     menu.add.vertical_margin(30)
-    menu.add.button('Settings', settings_menu,surface)
+    menu.add.button('Settings', settings_menu, surface)
     menu.add.vertical_margin(10)
-    menu.add.button('Special Settings', special_settings_menu,surface)
+    menu.add.button('Special Settings', special_settings_menu, surface)
 
     # Allows menu to be run
     try:
