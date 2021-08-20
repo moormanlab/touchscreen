@@ -83,6 +83,18 @@ class Draw(object):
     def __init__(self,surface):
         self.surface = surface
 
+    def _get_color(self, color):
+      try:
+        if isinstance(color,str):
+            return tsColors[color]
+        elif isinstance(color,tuple):
+            return color
+        else:
+            raise ValueError('color not defined')
+      except:
+        logger.exception('Color not recognized, using black')
+        return tsColors['black']
+
     def circle(self,color,center,radius):
         self.shape = Circle(self.surface,color,center,radius)
         self.shape.draw()

@@ -6,16 +6,18 @@ Updated by Ariel Burman, 04/2021
 '''
 from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED
 #colors
-red = (255,0,0)
-green = (0,255,0)
-blue = (0,0,255)
-black = (0,0,0)
-yellow = (255,255,0)
-purple = (255,0,255)
-white = (255,255,255)
-deepskyblue = (0,191,255)
-gray = (128,128,128)
  
+from touchscreen_protocol import tTone
+t1 = tTone(frequency = 1000, duration = 0.2, amplitude = 0.04)
+
+from touchscreen_protocol import tsColors
+red    = tsColors['red']
+green  = tsColors['green']
+blue   = tsColors['blue']
+black  = tsColors['black']
+yellow = tsColors['yellow']
+dark_gray = tsColors['darkgray']
+
 class OperantConditioning(Protocol):
     '''
     In this training the animal
@@ -35,7 +37,7 @@ class OperantConditioning(Protocol):
     def sensor_handler(self):
         self.log('IRbeam was broken')
         self.beamBroken = True
-        self.beamTimer = time.time()
+        self.beamTimer = self.now()
 
     def check_collision(self,objectT, mouse_pos,color=(0,0,0)):
         '''
@@ -74,7 +76,7 @@ class OperantConditioning(Protocol):
         if self.sensor.is_activated() == False:
             if self.mouseAtWell == True:
                 #mouse has left the well
-                self.timeAtWell = time.time() - self.beamTimer
+                self.timeAtWell = self.now() - self.beamTimer
                 self.log('Time spent at well: {:.2f}'.format(self.timeAtWell))
                 self.mouseAtWell = False
 
@@ -85,15 +87,15 @@ class OperantConditioning(Protocol):
             self.log('Coordinates:' + str(mouse_pos))
             # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
             if self.check_collision(obj1,mouse_pos):
-                self.sound.play(frequency = 1000, duration = 0.2)
-                self.log('Sound played')
-                self.screen.fill(gray)
+                self.sound.play(t1)
+                self.log('Sound played {}'.format(t1))
+                self.screen.fill(dark_gray)
                 self.screen.update()
                 self.liqrew.drop()
                 self.rewardCount = self.rewardCount + 1
                 self.log('Reward given. Total = {:d}'.format(self.rewardCount))
                 self.rewardGiven = True
-                time.sleep(sleepTime)
+                self.pause(sleepTime)
 
     def end(self):   
         self.log('Training Ended')
@@ -103,7 +105,9 @@ class OperantConditioning(Protocol):
 
 class ClassicalConditioning(Protocol):
     '''
-    Whenever the mouse goes to the spout there is a sound played and inmidiatly after there will be a reward
+        Whenever the mouse goes to the spout there is a sound played and 
+        immediately after there will be a reward. There is a window of no
+        reward after the mouse leaves the spout
     '''
 
     def init(self):
@@ -112,7 +116,7 @@ class ClassicalConditioning(Protocol):
         self.liqrew.set_drop_amount(1) # drop amount of liquid reward, adjust as needed
         self.rewardGiven = False
         self.finishTrial = False
-        self.sleepTime = 3
+        self.sleepTime = 5
         self.timeAtWell = 0
         self.mouseAtWell = False
         self.rewardCount = 0
@@ -123,7 +127,7 @@ class ClassicalConditioning(Protocol):
     def sensor_handler(self):
         self.log('IRbeam was broken')
         self.beamBroken = True
-        self.beamTimer = time.time()
+        self.beamTimer = self.now()
 
 
     def main(self,event):
@@ -132,7 +136,7 @@ class ClassicalConditioning(Protocol):
         #Stops program for X seconds after a trial is completed 
         if self.finishTrial == True:
             #Turns screen gray to make sure it's working 
-            self.screen.fill(gray)
+            self.screen.fill(dark_gray)
             self.screen.update()
             #Sleeps program for X seconds
             self.pause(self.sleepTime)
@@ -144,8 +148,8 @@ class ClassicalConditioning(Protocol):
             self.beamBroken = False
             self.mouseAtWell = True
             self.log('Mouse has entered well')
-            self.sound.play()
-            self.log('Sound played')
+            self.sound.play(t1)
+            self.log('Sound played {}'.format(t1))
             self.liqrew.drop()
             self.rewardCount += 1
             self.log('Reward given. Total = {:d}'.format(self.rewardCount))
@@ -154,7 +158,7 @@ class ClassicalConditioning(Protocol):
             self.log('Mouse has left well')
             self.mouseAtWell = False
             self.finishTrial = True
-            self.timeAtWell = time.time() - self.beamTimer
+            self.timeAtWell = self.now() - self.beamTimer
             self.log('Time spent at well: {:.2f}'.format(self.timeAtWell))
 
         if event.type == POINTERPRESSED:
@@ -167,18 +171,16 @@ class ClassicalConditioning(Protocol):
         self.log('Results {}'.format(self.rewardCount))
 
 
-from touchscreen_protocol import tTone
-t1 = tTone(frequency = 1000, duration = 0.2)
 
 class BehavioralTestProtocol(Protocol):
     '''
-    This program is similiar to the behavioral test using the advantages provided by
+    This program is similar to the behavioral test using the advantages provided by
     the Protocol class.
 
-    there are three important parts of the program. init, main and end.
+    There are three important parts of the program. 'init', 'main' and end.
     Only main is mandatory.
 
-    the sensor_handler is and 
+    The sensor_handler is called whenever the mouse is reaches the spout
 
     '''
     def init(self):
@@ -213,9 +215,9 @@ class BehavioralTestProtocol(Protocol):
         self.screen.clean()
         #draw test shapes
         obj1 = self.draw.circle(color = yellow, center = (75,250), radius = 57)
-        obj2 = self.draw.polygon(color = purple, n_sides = 5, center = (260, 250), radius = 57)
-        obj3 = self.draw.polygon(red, 3, center = (450,270), radius = 63)
-        obj4 = self.draw.rect(blue, start = (600,200), size = (125,100))
+        obj2 = self.draw.polygon(color = tsColors['green'], n_sides = 5, center = (260, 250), radius = 57)
+        obj3 = self.draw.polygon(tsColors['red'], 3, center = (450,270), radius = 63)
+        obj4 = self.draw.rect('blue', start = (600,200), size = (125,100))
         
         # Update  the display
         self.screen.update()
@@ -227,15 +229,15 @@ class BehavioralTestProtocol(Protocol):
             # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
             if (self.check_collision(obj1, mouse_pos) or
                 self.check_collision(obj2, mouse_pos) or
-                self.check_collision(obj3, mouse_pos, red) or
-                self.check_collision(obj4, mouse_pos, blue) ):
+                self.check_collision(obj3, mouse_pos) or
+                self.check_collision(obj4, mouse_pos) ):
                 self.sound.play(frequency=1000, duration = .2)
                 self.liqrew.drop()
 
         return
 
     def end(self):
-        self.note('Something the user would like to write in the log file')
+        self.setNote('Something the user would like to write in the log file')
         self.log('Finished')
 
 
@@ -253,6 +255,12 @@ import logging
 from return_to_menu import return_to_menu
 import time
 
+red    = ( 255,   0,   0)
+green  = (   0, 255,   0)
+blue   = (   0,   0, 255)
+black  = (   0,   0,   0)
+yellow = ( 255, 255,   0)
+white  = ( 255, 255, 255)
 
 class BehavioralTestBase(BaseProtocol):
     '''
@@ -295,7 +303,7 @@ class BehavioralTestBase(BaseProtocol):
             screen.fill(black)
             #draw test shapes
             obj1 = pygame.draw.circle(screen, yellow, (75,250), 57)
-            obj2 = pygame.draw.circle(screen, purple , (260, 250), 57)
+            obj2 = pygame.draw.circle(screen, green, (260, 250), 57)
             obj3 = pygame.draw.rect(screen, red, (400,200, 100,100))
             obj4 = pygame.draw.rect(screen, blue, (600,200, 125,100))
         
@@ -312,7 +320,7 @@ class BehavioralTestBase(BaseProtocol):
                     if left_click or event.type==pygame.FINGERDOWN:
                         # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
                         if (self.check_collision(obj1,mouse_pos, yellow) or
-                            self.check_collision(obj2,mouse_pos, purple) or
+                            self.check_collision(obj2,mouse_pos, green) or
                             self.check_collision(obj3,mouse_pos, red) or
                             self.check_collision(obj4,mouse_pos, blue) ):
                             self.sound.play()
@@ -333,15 +341,8 @@ class BehavioralTestBase(BaseProtocol):
         return
 
 
-
-
-
-#
-#if __name__ == '__main__':
-#    pygame.init()
-#    if isRaspberryPI():
-#        surface = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
-#        pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
-#    else:
-#        surface = pygame.display.set_mode((800,480))
-#    behavioral_test_1(surface)
+if __name__ == '__main__':
+    pygame.init()
+    from Touchscreen_menu import create_surface, protocol_run
+    surface = create_surface()
+    protocol_run(BehavioralTestBase,surface,['Ariel','pepe'])

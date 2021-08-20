@@ -309,13 +309,13 @@ def sound_menu(audio):
             label.set_title('     {:2.1f} s'.format(params.duration))
 
     def increase_amplitude(label):
-        params.amplitude = params.amplitude + 0.1
-        label.set_title('     {:2.1f}  '.format(params.amplitude))
+        params.amplitude = params.amplitude + 0.01
+        label.set_title('     {:3.2f}  '.format(params.amplitude))
 
     def decrease_amplitude(label):
-        if params.amplitude > .07:
-            params.amplitude = params.amplitude - 0.05
-            label.set_title('     {:2.1f}  '.format(params.amplitude))
+        if params.amplitude > .015:
+            params.amplitude = params.amplitude - 0.01
+            label.set_title('     {:3.2f}  '.format(params.amplitude))
 
     def playsnd():
         sounddev.play(frequency = params.frequency, duration = params.duration, amplitude = params.amplitude)
@@ -343,7 +343,7 @@ def sound_menu(audio):
     frameT.pack(sndMenu.add._horizontal_margin(20), align = pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(sndMenu.add.button('  -  ', decrease_duration, labelT, border_width=2), align = pygame_menu.locals.ALIGN_CENTER) #\u2796
 
-    labelA = sndMenu.add.label('     {:2.1f} s'.format(params.amplitude))
+    labelA = sndMenu.add.label('     {:3.2f}  '.format(params.amplitude))
     frameA = sndMenu.add.frame_h(600,58)
     frameA.pack(sndMenu.add.label('   Amplitude:'), align = pygame_menu.locals.ALIGN_CENTER)
     frameA.pack(labelA, align = pygame_menu.locals.ALIGN_CENTER)
@@ -786,15 +786,15 @@ def main_menu():
         files_menu(data, surface)
 
     # Creates initial buttons
-    frameS = menu.add.frame_h(700,58)
-    S1 = menu.add.dropselect('Subject Id', items=dbGetAll('subject'), default=0, dropselect_id='subject', placeholder='Select        ', placeholder_add_to_selection_box = False)
+    frameS = menu.add.frame_h(760,58)
+    S1 = menu.add.dropselect('Subject Id', items=dbGetAll('subject'), default=0, dropselect_id='subject', placeholder='Select             ', placeholder_add_to_selection_box = False)
     frameS.pack(menu.add.button('Clear', clearItems, S1), align='align-right')
     frameS.pack(menu.add.button('Del', delItems, S1), align='align-right')
     frameS.pack(menu.add.button('Add', addItems, S1, surface), align='align-right')
     frameS.pack(S1, align='align-right')
 
-    frameE = menu.add.frame_h(700,58)
-    S2 = menu.add.dropselect('Experimenter Id', items=dbGetAll('experimenter'), default=0, dropselect_id='experimenter', placeholder='Select        ', placeholder_add_to_selection_box = False) 
+    frameE = menu.add.frame_h(760,58)
+    S2 = menu.add.dropselect('Experimenter Id', items=dbGetAll('experimenter'), default=0, dropselect_id='experimenter', placeholder='Select             ', placeholder_add_to_selection_box = False) 
     frameE.pack(menu.add.button('Clear', clearItems, S2), align='align-right')
     frameE.pack(menu.add.button('Del', delItems, S2), align='align-right')
     frameE.pack(menu.add.button('Add', addItems, S2, surface), align='align-right')

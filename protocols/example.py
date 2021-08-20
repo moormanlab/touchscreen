@@ -1,16 +1,17 @@
-from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED
+from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED, tsColors
 
-red = (255,0,0)
+dark_gray = tsColors['darkgray']
+red = tsColors['red']
 
 class Test1(BaseProtocol):
     '''
-    This example Test protocol, based in the class 'BaseProtocol'
+    This example test protocol, based in the class 'BaseProtocol'
     requires use of pygame library
     It should control the main loop and the surface at all time.
 
     In the example when the pointer collides with the box it will end the training
     There are three method for the control sequence: 'init', 'main' and 'end'.
-    Only 'main is mandatory
+    Only 'main' is mandatory
     '''
 
     def init(self):
@@ -39,7 +40,7 @@ class Test2(Protocol):
     than test_1, but using the advantages of the Protocol class.
     The main difference is that the main function must not use a while loop.
     Instead it should include only the code for one single loop cycle and it will
-    be continusly called from the protocol manager.
+    be continuously called from the protocol manager.
     '''
     def init(self):
         #self.log('This message will get lost in old log file')
@@ -56,13 +57,16 @@ class Test2(Protocol):
     def end(self):
         self.log('End training Test2')
 
-white = (255,255,255)
+
+white = tsColors['white']
+
 class TestingTouch(Protocol):
     '''
-        This training protocol will deliver reward anytime the mouse touches the screen.
-        A small circle is drawn where there is an interaction with the screen.
-        This protocol only ends using the built-in quiting procedure: touch in the upper 
-        left corner and slide up to the upper right corner.
+        This training protocol, base on the 'Protocol' class will deliver
+        reward anytime the mouse touches the screen.  A small circle is drawn
+        where there is an interaction with the screen.  This protocol only ends
+        using the built-in quitting procedure: touch in the upper left corner
+        and slide up to the upper right corner.
     '''
     def init(self):
         self.sensor.set_handler(self.sensor_handler)
@@ -82,28 +86,27 @@ class TestingTouch(Protocol):
             self.draw.circle(white, event.position, 20)
             self.lastposition = event.position
             self.screen.update()
-            self.sound.play(frequency=440, duration=.2)
+            self.sound.play(frequency=440, duration=.2, amplitude = .05)
             self.log('Valve drop, giving reward')
             self.liqrew.drop()
-            self.log('pointer pressed at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
+            self.log('Pointer pressed at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
 
         elif event.type == POINTERMOTION:
             self.lastposition = event.position
-            self.log('pointer moving')
+            self.log('Pointer moving')
 
         elif event.type == POINTERRELEASED:
             self.pressed = False
-            #self.liqrew.close()
             self.lastposition = 0
-            self.log('pointer released at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
+            self.log('Pointer released at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
     def sensor_handler(self):
         self.log('Decide what to do when the IRbeam was broken')
 
     def end(self):
         self.setNote()
-        self.log('ended training')
+        self.log('Ended training')
 
 
 class Test(object):

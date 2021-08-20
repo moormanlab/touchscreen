@@ -1,6 +1,7 @@
 import logging
 import pygame
 from abc import ABC, abstractmethod
+import time
 
 from hal import isRaspberryPI, LiqReward, IRSensor, Sound
 from keyboard import keyboard
@@ -188,8 +189,10 @@ class Protocol(BaseProtocol):
         pass
 
     def pause(self,sleeptime):
-        import time
         time.sleep(sleeptime)
+
+    def now(self):
+        return time.time()
 
     def quit(self):
         self._exit = True

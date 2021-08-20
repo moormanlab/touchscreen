@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from arch import isRaspberryPI
 
-logger = logging.getLogger('halLiqReward')
+logger = logging.getLogger('HALLiqReward')
 
 pf = None if isRaspberryPI() else MockFactory()
 
@@ -59,8 +59,6 @@ class LiquidRewardTempl(ABC):
 #####################################################
 class LeeValve(LiquidRewardTempl):
     def __init__(self, drop_amount: int = 1):
-        #super().__init__()
-        #super().__init__(drop_amount)
         self.valve = DigitalOutputDevice(liqRewPIN, pin_factory=pf)
         self.set_drop_amount(drop_amount)
 
@@ -81,6 +79,7 @@ class LeeValve(LiquidRewardTempl):
         self.valve.off()
 
     def drop(self):
+        logger.info('Drop delivered')
         self.valve.blink(on_time=self.open_time, n=1)
 
     def _close(self):
@@ -113,6 +112,7 @@ class LeePump(LiquidRewardTempl):
         self.pump.off()
 
     def drop(self):
+        logger.info('Drop delivered')
         self.pump.blink(on_time=.1, off_time=.1, n=self.drop_amount, background=True)
 
     def _close(self):
