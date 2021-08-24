@@ -58,6 +58,35 @@ class Test2(Protocol):
         self.log('End training Test2')
 
 
+
+class TestingReward(Protocol):
+    '''
+        This training protocol, base on the 'Protocol' class will deliver
+        reward anytime the mouse reachs the spout.
+        This protocol uses the default handlers name, so there is no need to set
+        the handlers (they are already setted).
+        This protocol only ends using the built-in quitting procedure: touch in
+        the upper left corner and slide up to the upper right corner.
+    '''
+    def init(self):
+        self.liqrew.set_drop_amount(2)
+        self.pressed = False
+        self.lastposition = 0
+        self.log('Test Started')
+
+    def sensor_handler_in(self):
+        self.log('subject at the spout')
+        self.liqrew.drop()
+        self.sound.play(frequency=440, duration=.2, amplitude = .05)
+
+    def set_handler_out(self):
+        self.log('subject left the spout')
+
+    def end(self):
+        self.set_note()
+        self.log('Ended training')
+
+
 white = tsColors['white']
 
 class TestingTouch(Protocol):
@@ -69,7 +98,8 @@ class TestingTouch(Protocol):
         and slide up to the upper right corner.
     '''
     def init(self):
-        self.sensor.set_handler(self.sensor_handler)
+        self.sensor.set_handler_in(self.break_in)
+        self.sensor.set_handler_out(self.break_out)
         self.liqrew.set_drop_amount(5)
         self.pressed = False
         self.lastposition = 0
@@ -101,11 +131,14 @@ class TestingTouch(Protocol):
             self.lastposition = 0
             self.log('Pointer released at {:03d}, {:03d}'.format(event.position[0],event.position[1]))
 
-    def sensor_handler(self):
-        self.log('Decide what to do when the IRbeam was broken')
+    def break_in(self):
+        self.log('subject at the spout')
+
+    def break_out(self):
+        self.log('subject left the spout')
 
     def end(self):
-        self.setNote()
+        self.set_note()
         self.log('Ended training')
 
 

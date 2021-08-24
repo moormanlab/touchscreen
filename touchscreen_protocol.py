@@ -39,7 +39,7 @@ class BaseProtocol(ABC):
         self._type = 'BaseProtocol'
         self.surface = surface
         self.liqrew = LiqReward()
-        self.sensor = IRSensor(self.sensor_handler)
+        self.sensor = IRSensor(self.sensor_handler_in, self.sensor_handler_out)
         self.sound = Sound()
         logger.debug('Sensor variant {}'.format(self.sensor.get_type()))
         logger.debug('Sound variant {}'.format(self.sound.get_type()))
@@ -90,7 +90,10 @@ class BaseProtocol(ABC):
     def log(self,string):
         self.logger.info(string)
 
-    def sensor_handler(self):
+    def sensor_handler_in(self):
+        pass
+
+    def sensor_handler_out(self):
         pass
 
     def init(self):
@@ -197,11 +200,11 @@ class Protocol(BaseProtocol):
     def quit(self):
         self._exit = True
 
-    def setMaxFPS(self, fps: int):
+    def set_max_fps(self, fps: int):
         #assert isinstance(fps, int)
         self._fps = fps
 
-    def setNote(self,title=None):
+    def set_note(self,title=None):
         note = keyboard(self.surface)
         if note != '':
             if title == None:

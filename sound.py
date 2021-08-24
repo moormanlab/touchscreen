@@ -44,10 +44,10 @@ class tTone(object):
             msg += 'frequency = {:3.2f} kHz, '.format(self.frequency)
         else:
             msg += 'frequency = {:d} Hz, '.format(self.frequency)
-        if self.duration > 1:
-            msg += 'duration = {:3.1f} s, '.format(self.duration)
+        if self.duration < 1.0:
+            msg += 'duration = {:d} ms, '.format(int(self.duration*1000))
         else:
-            msg += 'duration = {:d} s, '.format(int(self.duration*1000))
+            msg += 'duration = {:3.1f} s, '.format(self.duration)
         msg += 'amplitude = {:d} %'.format(int(self.amplitude*100))
         return msg
 

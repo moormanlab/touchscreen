@@ -81,13 +81,6 @@ class Sound():
     def get_type(self):
         return self.__variant
 
-    #def play(self,frec=440.0,duration=1.0):
-    #    return self.__instance.play(frec,duration)
-
-    #def playTune(self,tune):
-    #    logger.info('Buzzer playing custom tune')
-    #    self.__instance.playTune(tune)
-
     def get_items():
         return Sound.__items
 
@@ -101,14 +94,13 @@ class IRSensor(object):
     __variant = None
     __items = [('No Sensor', 'None'),('AdaFruit', 'adafruit'),('SparkfunCustom','sparkfuncustom')]
 
-    def __init__(self,handler=None,variant=None):
+    def __init__(self,handler_in=None,handler_out=None,variant=None):
         ''' 
             if there is already an instance and specifying a (new) variant (only should happen during hardware configuration) close old instance and create the new one.
             if there is no instance create one.
             if no variant specified or using PC, use a dummy
             if no variant specified and there is already an instance, just set or release handler
         '''
-        #print('here initializing IRSensor')
         if IRSensor.__instance and variant is not None:
             logger.debug('Closing IRSensor instance {}'.format(IRSensor.__variant))
             IRSensor.__instance._close()
@@ -118,9 +110,9 @@ class IRSensor(object):
         if IRSensor.__instance is None:
             if variant is not None:
                 if variant == 'adafruit':
-                    IRSensor.__instance=AdafruitSensor(handler)
+                    IRSensor.__instance=AdafruitSensor(handler_in,handler_out)
                 elif variant == 'sparkfuncustom':
-                    IRSensor.__instance=SparkfunCustomIrSensor(handler)
+                    IRSensor.__instance=SparkfunCustomIrSensor(handler_in,handler_out)
                 else:
                     raise ValueError('Sensor device "{}" not recognized'.format(variant))
                 IRSensor.__variant = variant
@@ -129,10 +121,14 @@ class IRSensor(object):
 
             logger.debug('New IRSensor instance {}'.format(IRSensor.__variant))
         else:
-            if handler is not None:
-                IRSensor.__instance.set_handler(handler)
+            if handler_in is not None:
+                IRSensor.__instance.set_handler_in(handler_in)
             else:
-                IRSensor.__instance.releaseHandler()
+                IRSensor.__instance.release_handler_out()
+            if handler_out is not None:
+                IRSensor.__instance.set_handler_out(handler_out)
+            else:
+                IRSensor.__instance.release_handler_out()
 
     def __getattr__(self, attr):
         """ Delegate access to implementation """
@@ -148,23 +144,8 @@ class IRSensor(object):
         else:
             return False
 
-    def set_handler(self, handler):
-        if IRSensor.__instance:
-            IRSensor.__instance.set_handler(handler)
-
-    def release_handler(self):
-        if IRSensor.__instance:
-            IRSensor.__instance.release_handler()
-
     def get_type(self):
         return self.__variant
-
-#    def __del__(self):
-#        logger.debug('Deleting global instance of IRSensor')
-#        print('Deleting global instance of IRSensor')
-#        if IRSensor.__instance:
-#            IRSensor.__instance._close()
-#            IRSensor.__instance = None
 
     def get_items():
         return IRSensor.__items
@@ -250,11 +231,6 @@ class LiqReward(object):
 
     def get_type(self):
         return LiqReward.__variant
-
-#    def __del__(self):
-#        print('Deleting instance of LiqReward')
-#        if self.__instance:
-#            self.__instance._close()
 
     def get_items():
         return LiqReward.__items

@@ -8,7 +8,7 @@ from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTER
 #colors
  
 from touchscreen_protocol import tTone
-t1 = tTone(frequency = 1000, duration = 0.2, amplitude = 0.04)
+t1 = tTone(frequency = 1000, duration = 0.2, amplitude = 0.07)
 
 from touchscreen_protocol import tsColors
 red    = tsColors['red']
@@ -18,88 +18,84 @@ black  = tsColors['black']
 yellow = tsColors['yellow']
 dark_gray = tsColors['darkgray']
 
+REWARD_WINDOW = 15.0
+INTER_TOUCHS_TIME = 1.0
+
 class OperantConditioning(Protocol):
     '''
-    In this training the animal
+    In this training the animal has to touch the screen to get a reward.
+    A Reward is delivered if the animal goes to the spout within the reward window time.
     '''
 
     def init(self):
         self.set_log_filename('OpCond')
         self.log('Operant Conditioning Started')
         self.liqrew.set_drop_amount(2) # drop amount, adjust as needed
-        self.beamBroken = False
-        self.beamTimer = 0
-        self.rewardGiven = False
-        self.mouseAtWell = False
-        self.rewardCount = 0
+        self.beam_broken = False
+        self.beam_timer = 0
+        self.mouse_at_spout = False
+        self.touch_time = 0
+        self.reward_count = 0
+        self.reward_missed = 0
+        self.reward_active = False
         self.screen.setBackcolor = (0,0,0)
+        self.set_note('Weight')
 
-    def sensor_handler(self):
+    def sensor_handler_in(self):
         self.log('IRbeam was broken')
-        self.beamBroken = True
-        self.beamTimer = self.now()
-
-    def check_collision(self,objectT, mouse_pos,color=(0,0,0)):
-        '''
-        Function to check if mouse click collides with one of the objects. 
-        Takes in object, mouse position (tuple of coordinates) and pressed (boolean, True if mouse was clicked)
-        Default argument for color is black, but can be changed. 
-        '''
-        if objectT.collidepoint(mouse_pos):
-            self.log('Shape selected: {}'.format(objectT))
-            self.screen.fill(color)
-            self.screen.update()
-            return True
-        
-        return False
+        self.beam_broken = True
+        self.beam_timer = self.now()
 
     def main(self,event):
         # Fill the background with black
         self.screen.clean()
-        # Draw circles
-        obj1 = self.draw.rect(black, start=(0,0), size=(800,480))
 
-        # Update  the display
+        if self.reward_active == True:
+            if self.now() - self.touch_time > REWARD_WINDOW:
+                self.reward_active = False
+                self.log('Animal did not come for reward')
+                self.reward_missed += 1
+                self.log('Reward miseed. Total = {:d}'.format(self.reward_missed))
+            else:
+                self.screen.fill(dark_gray)
+        
         self.screen.update()
-    
-        if self.beamBroken == True:
-            self.beamBroken = False
-            self.mouseAtWell = True
-            if self.rewardGiven == True:
+
+        if self.beam_broken == True:
+            self.mouse_at_spout = True
+            if self.reward_active == True:
+                self.liqrew.drop()
                 # a reward was given, the mouse is collecting
-                self.log('Mouse got reward')
-                self.rewardGiven = False
+                self.reward_count += 1
+                self.log('Animal got reward. Total = {:d}'.format(self.reward_count))
+                self.reward_active = False
             else:
                 # there is no reward but mouse is exploring
                 self.log('Mouse at well without reward')
+            self.beam_broken = False
     
         if self.sensor.is_activated() == False:
-            if self.mouseAtWell == True:
+            if self.mouse_at_spout == True:
                 #mouse has left the well
-                self.timeAtWell = self.now() - self.beamTimer
-                self.log('Time spent at well: {:.2f}'.format(self.timeAtWell))
-                self.mouseAtWell = False
-
-        sleepTime = 3
+                self.time_at_spout = self.now() - self.beam_timer
+                self.log('Time spent at spout: {:.2f}'.format(self.time_at_spout))
+                self.mouse_at_spout = False
 
         if event.type == POINTERPRESSED:
-            mouse_pos = event.position
-            self.log('Coordinates:' + str(mouse_pos))
-            # Check if the object "collided" with the mouse pos and if the left mouse button was pressed
-            if self.check_collision(obj1,mouse_pos):
+            if self.now() - self.touch_time > INTER_TOUCHS_TIME:
+                self.touch_time = self.now()
+                mouse_pos = event.position
+                self.log('Coordinates:' + str(mouse_pos))
+                if self.reward_active == True:
+                    self.log('Animal did not come for last reward')
                 self.sound.play(t1)
                 self.log('Sound played {}'.format(t1))
-                self.screen.fill(dark_gray)
-                self.screen.update()
-                self.liqrew.drop()
-                self.rewardCount = self.rewardCount + 1
-                self.log('Reward given. Total = {:d}'.format(self.rewardCount))
-                self.rewardGiven = True
-                self.pause(sleepTime)
+                self.reward_active = True
 
     def end(self):   
         self.log('Training Ended')
-        self.log('Results {}'.format(self.rewardCount))
+        self.log('Total rewards {}'.format(self.reward_count))
+        self.log('Total missed {}'.format(self.reward_missed))
 
 
 
@@ -124,15 +120,18 @@ class ClassicalConditioning(Protocol):
         self.beamTimer = 0
 
 
-    def sensor_handler(self):
+    def sensor_handler_in(self):
         self.log('IRbeam was broken')
         self.beamBroken = True
         self.beamTimer = self.now()
 
+    def sensor_handler_out(self):
+        self.log('IRbeam was released')
 
     def main(self,event):
         self.screen.fill(black)
         self.screen.update()
+
         #Stops program for X seconds after a trial is completed 
         if self.finishTrial == True:
             #Turns screen gray to make sure it's working 
@@ -142,17 +141,22 @@ class ClassicalConditioning(Protocol):
             self.pause(self.sleepTime)
             self.log('Finished Trial. Waiting to start next trial')
             self.finishTrial = False
+            self.beamBroken = False
+            self.rewardGiven = False
 
         #Delivers reward and plays sound every time beam is broken 
         if self.beamBroken == True:
-            self.beamBroken = False
             self.mouseAtWell = True
             self.log('Mouse has entered well')
-            self.sound.play(t1)
-            self.log('Sound played {}'.format(t1))
-            self.liqrew.drop()
-            self.rewardCount += 1
-            self.log('Reward given. Total = {:d}'.format(self.rewardCount))
+            if not self.rewardGiven:
+                self.sound.play(t1)
+                self.log('Sound played {}'.format(t1))
+                self.liqrew.drop()
+                self.rewardCount += 1
+                self.rewardGiven = True
+                self.log('Reward given. Total = {:d}'.format(self.rewardCount))
+            else:
+                self.log('Reward for this trial already delivered')
     
         if (self.mouseAtWell == True) and (self.sensor.is_activated() == False):
             self.log('Mouse has left well')
@@ -187,7 +191,7 @@ class BehavioralTestProtocol(Protocol):
         self.set_log_filename('BehTest1')
         self.log('Behavioral Test 1 Started')
 
-    def sensor_handler(self):
+    def sensor_handler_in(self):
         self.log('Decide what to do when the IRbeam was broken')
 
     def check_collision(self, objectT, mouse_pos):
@@ -237,7 +241,7 @@ class BehavioralTestProtocol(Protocol):
         return
 
     def end(self):
-        self.setNote('Something the user would like to write in the log file')
+        self.set_note('Something the user would like to write in the log file')
         self.log('Finished')
 
 
@@ -271,7 +275,7 @@ class BehavioralTestBase(BaseProtocol):
     use any feature not contemplated in the Protocol Class.
     '''
     def init(self):
-        self.sensor.set_handler(self.sensor_handler)
+        self.sensor.set_handler_in(self.sensor_handler)
 
     def sensor_handler(self):
         logging.info('Decide what to do when the IRbeam was broken')
