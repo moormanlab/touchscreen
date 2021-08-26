@@ -224,10 +224,10 @@ class LiqReward(object):
             logger.info('Valve closed')
             return LiqReward.__instance.close()
 
-    def drop(self):
+    def drop(self, N=None):
         if LiqReward.__instance:
             logger.info('Valve drop amount {}'.format(repr(LiqReward.__instance)))
-            return LiqReward.__instance.drop()
+            return LiqReward.__instance.drop(N)
 
     def get_type(self):
         return LiqReward.__variant

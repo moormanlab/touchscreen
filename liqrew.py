@@ -32,7 +32,7 @@ class LiquidRewardTempl(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def drop(self):
+    def drop(self, N=None):
         ''' release drop_amount of liquid reward ''' 
         raise NotImplementedError
 
@@ -78,9 +78,12 @@ class LeeValve(LiquidRewardTempl):
     def close(self):
         self.valve.off()
 
-    def drop(self):
+    def drop(self,N=None):
         logger.info('Drop delivered')
-        self.valve.blink(on_time=self.open_time, n=1)
+        if isinstance(N,int) and N > 1:
+            self.valve.blink(on_time=float(N*0.01), n=1, background=True)
+        else:
+            self.valve.blink(on_time=self.open_time, n=1)
 
     def _close(self):
         self.valve.close()
@@ -111,9 +114,12 @@ class LeePump(LiquidRewardTempl):
     def close(self):
         self.pump.off()
 
-    def drop(self):
+    def drop(self,N=None):
         logger.info('Drop delivered')
-        self.pump.blink(on_time=.1, off_time=.1, n=self.drop_amount, background=True)
+        if isinstance(N,int) and N > 1:
+            self.pump.blink(on_time=.1, off_time=.1, n=N, background=True)
+        else:
+            self.pump.blink(on_time=.1, off_time=.1, n=self.drop_amount, background=True)
 
     def _close(self):
         self.pump.close()
