@@ -6,7 +6,7 @@
 
 ### Prepare microSD card
 
-Download latest Raspberry Pi OS Lite image from [Raspberry Pi OS](https://www.raspberrypi.org/software/operating-systems/#raspberry-pi-os-32-bit)
+Download latest Raspberry Pi OS with Desktop image from [Raspberry Pi OS](https://www.raspberrypi.org/software/operating-systems/#raspberry-pi-os-32-bit)
 Use [Raspberry Imager](https://www.raspberrypi.org/software/). If you use a Linux system, alternatively you can unzip the downloaded image and then copy it into the microSD card with the following command:
 ```
 sudo dd if=~/PATH_TO_IMAGE/IMAGE_FILE.img of=/deb/sdb bs=4M
