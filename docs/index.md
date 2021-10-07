@@ -39,7 +39,6 @@ In `boot` partition create the text file `config.txt` with the following lines
 raspi-config noinit do_serial 0 1
 dtoverlay=disable-bt
 enable_uart=1
-the empty
 ```
 
 # First Boot
