@@ -18,7 +18,7 @@ network={
 Where `YOUR_NET_ID` is the eduroam Net Id: `username@umass.edu` and `YOUR_NET_PASSWORD` is the password.
 
 
-Also, in the `rootfs` partition edit the file `lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant` (it might require admin priviliges)
+Also, in the `rootfs` partition edit the file `/lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant` (it might require admin priviliges)
 (only if wifi is WPA-EAP)
 change line 60 from 
 ```
