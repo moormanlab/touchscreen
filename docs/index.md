@@ -85,3 +85,10 @@ Note: after the first command it might require the password
 # Using the software
 
 After rebooting, the touchscreen software should start automatically.
+
+
+# Troubleshooting
+
+If at any point the raspberry pi is not able to connect to the WiFi network, the network configuration migth be disabled.
+The file `/etc/wpa_supplicant/wpa_supplicant.conf` in the `rootfs` partition can have multiple networks configurations loaded.
+We should check that the one we need to use does not have the line `disabled=1` added.
