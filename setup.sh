@@ -1,9 +1,4 @@
-#!/bin/bashsudo 
-apt-get update
-apt-get upgrade
-apt-get install python3-virtualenv
-cd ~
-git clone https://github.com/moormanlab/touchscreen
+#!/bin/bash
 python3 -m venv touchenv
 source ~/touchenv/bin/activate
 pip install --upgrade pip setuptools
