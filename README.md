@@ -16,8 +16,8 @@ python3 -m venv touchenv
 source ~/touchenv/bin/activate
 pip install --upgrade pip setuptools
 pip install -r touchscreen/requirements.txt
-cp ~/touchscreen/touch.desktop ~/.local/share/applications
+cp ~/touchscreen/scripts/touch.desktop ~/.local/share/applications
 mkdir ~/.config/autostart
-cp ~/touchscreen/touch.desktop ~/.config/autostart
+cp ~/touchscreen/scripts/touch.desktop ~/.config/autostart
 reboot
 ```
