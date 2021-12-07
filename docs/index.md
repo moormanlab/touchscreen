@@ -78,7 +78,7 @@ pip install -r touchscreen/requirements.txt
 cp ~/touchscreen/scripts/touch.desktop ~/.local/share/applications
 mkdir ~/.config/autostart
 cp ~/touchscreen/scripts/touch.desktop ~/.config/autostart
-sudo apt-get install curl libsdl2-mixer-2.0-0 libsdl2-image-2.0-0 libsdl2-2.0-0
+sudo apt-get install libsdl2-mixer-2.0-0 libsdl2-2.0-0
 reboot
 ```
 Note: after the first command it might require the password
