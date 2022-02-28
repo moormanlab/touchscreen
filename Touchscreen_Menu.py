@@ -1018,6 +1018,7 @@ def main_menu():
     menu.add.button('Settings', settings_menu, surface)
     menu.add.vertical_margin(10)
     menu.add.button('Special Settings', special_settings_menu, surface)
+    menu.add.button('Exit', pygame_menu.events.EXIT)
 
     # Allows menu to be run
     try:
