@@ -1,7 +1,9 @@
 import pygame
 from pygame_vkeyboard import vkeys
 from pygame_vkeyboard import vkeyboard as vkb
-avoid_double_char = 0
+import time
+
+last_time = time.time_ns()
 
 class VEnterKey(vkeys.VActionKey):
     """Action key for the uppercase switch. """
@@ -226,17 +228,15 @@ class customVKeyboard(vkb.VKeyboard):
         key:
             Key that receives the key down event.
         """
-        global avoid_double_char
-        if avoid_double_char == 0:
+        global last_time
+        if time.time_ns() - last_time > 1000000:
             if isinstance(key, vkeys.VBackKey):
                 self.input.delete_at_cursor()
             else:
                 text = key.update_buffer('')
                 if text:
                     self.input.add_at_cursor(text)
-            avoid_double_char = 1
-        else:
-            avoid_double_char = 0
+            last_time = time.time_ns()
 
     def consumer(self, text):
         pass
@@ -324,8 +324,8 @@ def keyboard(screen):
     keys = [
             ['1','2','3','4','5','6','7','8','9','0'],
             ['q','w','e','r','t','y','u','i','o','p'],
-            ['a','s','d','f','g','h','j','k','l','@'],
-            ['z','x','c','v','b','n','m','.','-','_'],
+            ['a','s','d','f','g','h','j','k','l','/'],
+            ['z','x','c','v','b','n','m','.','@','_'],
            ]
 
     cRendererd = customVKRenderer()
