@@ -691,12 +691,16 @@ def add_file():
         FILE_LIST.append(SELECTED_FILE_PATH[0])
         print(FILE_LIST)
 
+"""
+# Original email function
 def set_email(recipt):
-    """
-    Sets the recipient of the email
-    :param text: email@email.com
-    :return:
-    """
+    global EMAIL
+    EMAIL = recipt
+    pass
+"""
+
+def set_email(surface):
+    recipt = keyboard(surface)
     global EMAIL
     EMAIL = recipt
     pass
@@ -775,9 +779,11 @@ def send_data_menu(surface):
     update_list()
     FILE_LIST.clear()
     sdMenu = initialize_menu('Email Data')
-    sdMenu.add.text_input('Email Address: ', maxwidth=19, default=EMAIL, input_underline='_', onchange=set_email)
-    sdMenu.add.selector('File: ', FILE_NAMES, onchange=set_file)
-    sdMenu.add.button('Add file', add_file)
+    sdMenu.add.button('Set email address', set_email, surface)
+    #sdMenu.add.text_input('Email Address: ', maxwidth=19, default=EMAIL, input_underline='_', onchange=set_email)
+    frameF = sdMenu.add.frame_h(760, 58)
+    frameF.pack(sdMenu.add.button('Add file', add_file), align='align-right')
+    frameF.pack(sdMenu.add.selector('File: ', FILE_NAMES, onchange=set_file), align='align-left')
     sdMenu.add.button('View attached files', view_file_list, surface)
     sdMenu.add.button('Send', send_email, surface)
 
@@ -796,39 +802,40 @@ def create_surface():
 
     return surface
 
-def piSynchronizeTime():
-    delayLinkInit = 10
-    delaySyncInit = 25
 
-    delayLink = delayLinkInit
-    delaySync = delaySyncInit
-    if isRaspberryPI():
-        while delayLink:
-            time.sleep(1)
-            if showip.isLinkUp():
-                break
-            delayLink -= 1
-
-        # once there is a connection, usually takes 20 seconds to synchronize the clock
-        if showip.isLinkUp():
-            while delaySync:
-                a = datetime.datetime.now()
-                time.sleep(1)
-                b = datetime.datetime.now()
-                c = b - a
-                if c.seconds > 2:
-                    msg = 'System time correctly updated. LinkDelay {}, SyncDelay {}'.format(delayLinkInit-delayLink,delaySyncInit-delaySync)
-                    break
-                delaySync -=1
-
-            if delaySync == 0:
-                msg = 'Exceeded sync delay, System time was not updated. LinkDelay {} SyncTimeAwaited {}'.format(delayLinkInit-delayLink,delaySyncInit)
-        else:
-            msg = 'Exceeded connection delay, Internet connection was not established. LinkDelayAwaited {}'.format(delayLinkInit)
-    else:
-        msg = 'Working on computer, no need to synchronize time'
-
-    return msg
+# def piSynchronizeTime():
+#     delayLinkInit = 10
+#     delaySyncInit = 25
+#
+#     delayLink = delayLinkInit
+#     delaySync = delaySyncInit
+#     if isRaspberryPI():
+#         while delayLink:
+#             time.sleep(1)
+#             if showip.isLinkUp():
+#                 break
+#             delayLink -= 1
+#
+#         # once there is a connection, usually takes 20 seconds to synchronize the clock
+#         if showip.isLinkUp():
+#             while delaySync:
+#                 a = datetime.datetime.now()
+#                 time.sleep(1)
+#                 b = datetime.datetime.now()
+#                 c = b - a
+#                 if c.seconds > 2:
+#                     msg = 'System time correctly updated. LinkDelay {}, SyncDelay {}'.format(delayLinkInit-delayLink,delaySyncInit-delaySync)
+#                     break
+#                 delaySync -=1
+#
+#             if delaySync == 0:
+#                 msg = 'Exceeded sync delay, System time was not updated. LinkDelay {} SyncTimeAwaited {}'.format(delayLinkInit-delayLink,delaySyncInit)
+#         else:
+#             msg = 'Exceeded connection delay, Internet connection was not established. LinkDelayAwaited {}'.format(delayLinkInit)
+#     else:
+#         msg = 'Working on computer, no need to synchronize time'
+#
+#     return msg
 
 
 def initialize_hardware() -> None:
@@ -1018,7 +1025,6 @@ def main_menu():
     menu.add.button('Settings', settings_menu, surface)
     menu.add.vertical_margin(10)
     menu.add.button('Special Settings', special_settings_menu, surface)
-    menu.add.button('Exit', pygame_menu.events.EXIT)
 
     # Allows menu to be run
     try:

@@ -1,7 +1,7 @@
 import pygame
 from pygame_vkeyboard import vkeys
 from pygame_vkeyboard import vkeyboard as vkb
-
+avoid_double_char = 0
 
 class VEnterKey(vkeys.VActionKey):
     """Action key for the uppercase switch. """
@@ -145,8 +145,8 @@ class customVKLayout(vkb.VKeyboardLayout):
             raise ValueError('Empty layout model provided')
         if self.height_ratio is not None and (self.height_ratio < 0.2 or self.height_ratio > 1):
             raise ValueError('Surface height ratio shall be from 0.2 to 1')
-        
-        
+
+
     def configure_special_keys(self, keyboard):
         """Configures specials key if needed.
 
@@ -176,7 +176,7 @@ class customVKLayout(vkb.VKeyboardLayout):
         self.rows.append(special_row)
 
 
-    
+
     def set_size(self, size, surface_size):
         """Sets the size of this layout, and updates
         position, and rows accordingly.
@@ -226,12 +226,17 @@ class customVKeyboard(vkb.VKeyboard):
         key:
             Key that receives the key down event.
         """
-        if isinstance(key, vkeys.VBackKey):
-            self.input.delete_at_cursor()
+        global avoid_double_char
+        if avoid_double_char == 0:
+            if isinstance(key, vkeys.VBackKey):
+                self.input.delete_at_cursor()
+            else:
+                text = key.update_buffer('')
+                if text:
+                    self.input.add_at_cursor(text)
+            avoid_double_char = 1
         else:
-            text = key.update_buffer('')
-            if text:
-                self.input.add_at_cursor(text)
+            avoid_double_char = 0
 
     def consumer(self, text):
         pass
@@ -315,12 +320,12 @@ class customVKRenderer(vkb.VKeyboardRenderer):
 
 def keyboard(screen):
 
-    
+
     keys = [
             ['1','2','3','4','5','6','7','8','9','0'],
-            ['a','b','c','d','e','f','g','h','i','.'],
-            ['j','k','l','m','n','o','p','q','r','/'],
-            ['s','t','u','v','w','x','y','z','-','_'],
+            ['q','w','e','r','t','y','u','i','o','p'],
+            ['a','s','d','f','g','h','j','k','l','@'],
+            ['z','x','c','v','b','n','m','.','-','_'],
            ]
 
     cRendererd = customVKRenderer()
@@ -346,7 +351,7 @@ def keyboard(screen):
 
     inputName = keyboard.get_text()
     return inputName
-    
+
 if __name__ == '__main__':
     pygame.init()
     surface = pygame.display.set_mode((800,480))
