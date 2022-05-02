@@ -31,6 +31,8 @@ GMAIL_PASSWORD = 'moormanlabTC'
 logger = logging.getLogger('TouchMenu')
 
 logPath = os.path.abspath('logs')
+if not os.path.isdir(logPath):
+    os.mkdir(logPath)
 # print(logPath)
 protocolsPath = 'protocols'
 userLogHdlr = None
@@ -48,8 +50,9 @@ def update_list():
     """
     FILE_NAMES.clear()
     i = 0
-    for filename in os.listdir(logPath):
-        if filename.endswith('.log'):
+    files = os.listdir(logPath)
+    for filename in files:
+        if filename.endswith(('.log', '.csv')):
             i += 1
             FILE_NAMES.append((filename, i))
     FILE_NAMES.sort()
@@ -715,8 +718,7 @@ def validate_email(func):
         if not re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', EMAIL.lower()):
             window_message(surface, 'Email address is invalid')
             return
-        func(surface)
-        return
+        return func(surface)
 
     return wrapper
 
@@ -741,20 +743,25 @@ def send_email(surface):
         msg.attach(body_part)
 
         for path_to_file in FILE_LIST:
-            path_to_csv = path_to_file[:-3] + "csv"
-            # convert log file to csv
-            with open(path_to_file, 'r') as file:
-                lines = file.readlines()
-                with open(path_to_csv, 'w+') as csvfile:
-                    for line in lines:
-                        line = line.replace("@@", ",")
-                        # assume first two fields are 24 chars, add quotes to third field
-                        # not robust, must fix
-                        line = line[:24] + "\"" + line[24:-1] + "\"\n"
-                        print(line)
-                        csvfile.write(line)
-                csvfile.close()
-            file.close()
+            # if file is already in csv format, add it to the email as is
+            if path_to_file.endswith('.csv'):
+                path_to_csv = path_to_file
+            # if the file is still in deliminated log format, convert it and add to email
+            elif path_to_file.endswith('.log'):
+                path_to_csv = path_to_file[:-3] + "csv"
+                # convert log file to csv
+                with open(path_to_file, 'r') as file:
+                    lines = file.readlines()
+                    with open(path_to_csv, 'w+') as csvfile:
+                        for line in lines:
+                            line = line.replace("@@", ",")
+                            # assume first two fields are 24 chars, add quotes to third field
+                            # not robust, must fix
+                            line = line[:24] + "\"" + line[24:-1] + "\"\n"
+                            #print(line)
+                            csvfile.write(line)
+                    csvfile.close()
+                file.close()
 
             # Attach the file with filename to the email
             with open(path_to_csv, 'rb') as csvfile:
@@ -945,7 +952,7 @@ def database_init():
 
 def main_menu():
     # Initializes pygame and logging
-    update_list()
+    #update_list()
     pygame.init()
     database_init()
 
