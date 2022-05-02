@@ -9,6 +9,7 @@ from utils import POINTERPRESSED, POINTERMOTION, POINTERRELEASED, getPosition, t
 from return_to_menu import return_to_menu
 import shapes
 from sound import tTone
+from csv_logging import CSVLogger
 
 logger = logging.getLogger('TouchProtocols')
 
@@ -21,6 +22,11 @@ class tsEvent(object):
     def __str__(self):
         string = 'tsEvent: {}, Coord: {}'.format(self.get_type(),self.position)
         return string
+
+    def __eq__(self, event):
+        if self.get_type() == event.get_type() and self.position == event.position:
+            return True
+        return False
 
     def get_type(self):
         if self.type == POINTERPRESSED:
@@ -144,6 +150,7 @@ class Protocol(BaseProtocol):
         self._type = 'Protocol'
         self._exit = False
         self._fps = 60
+        self.csvlogger = CSVLogger(self.__class__.__name__, subject, experimenter)
 
     def _run(self):
         self.screen.clean()
@@ -155,37 +162,41 @@ class Protocol(BaseProtocol):
             clock.tick(self._fps)
             events = pygame.event.get()
             if events:
-              for event in events:
-                logger.debug(event)
-                tEvent = tsEvent()
-                tEvent.position = getPosition(event)
+                last_event = tsEvent()
+                for event in events:
+                    logger.debug(event)
+                    tEvent = tsEvent()
+                    tEvent.position = getPosition(event)
 
-                if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
-                    tEvent.type = POINTERPRESSED
-                    pressed = True
-                elif event.type in [pygame.MOUSEMOTION, pygame.FINGERMOTION] and pressed:
-                    tEvent.type = POINTERMOTION
-                elif event.type in [pygame.MOUSEBUTTONUP, pygame.FINGERUP]:
-                    tEvent.type = POINTERRELEASED
-                    pressed = False
+                    if event.type in [pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN]:
+                        tEvent.type = POINTERPRESSED
+                        pressed = True
+                    elif event.type in [pygame.MOUSEMOTION, pygame.FINGERMOTION] and pressed:
+                        tEvent.type = POINTERMOTION
+                    elif event.type in [pygame.MOUSEBUTTONUP, pygame.FINGERUP]:
+                        tEvent.type = POINTERRELEASED
+                        pressed = False
 
-                if tEvent.type:
-                    self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
+                    if tEvent.type and tEvent != last_event:
+                        self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
+                        self.csvlogger.log(event=tEvent, method='main')
+                    last_event = tEvent
 
-                # only on PC
-                if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.QUIT:
-                    return
+                    # only on PC
+                    if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.QUIT:
+                        return
 
-                if return_to_menu(event):
-                    return
+                    if return_to_menu(event):
+                        return
 
-                self.main(tEvent)
+                    self.main(tEvent)
             else:
                 self.main(tsEvent())
 
 
     def _end(self):
         logger.info('End running protocol {}'.format(self.__class__.__name__))
+        del self.csvlogger
         self.end()
 
     def main(self,event):

@@ -6,9 +6,9 @@ Updated by Ariel Burman, 04/2021
 '''
 from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED
 #colors
- 
+from csv_logging import CSVLogger
 from touchscreen_protocol import tTone
-t1 = tTone(frequency = 1000, duration = 0.2, amplitude = 0.07)
+t1 = tTone(frequency = 18000, duration = 0.2, amplitude = 0.07)
 
 from touchscreen_protocol import tsColors
 red    = tsColors['red']
@@ -107,9 +107,13 @@ class ClassicalConditioning(Protocol):
     '''
 
     def init(self):
+        self.csvlogger.configure(header=['reward_count'], replace=False)
+        self.csvlogger.start()
         self.set_log_filename('ClassCond')
         self.log('Classical Conditioning Started')
-        self.liqrew.set_drop_amount(1) # drop amount of liquid reward, adjust as needed
+        drops = 50
+        self.liqrew.set_drop_amount(drops) # drop amount of liquid reward, adjust as needed
+        self.csvlogger.log(event=f'Classical Conditioning Started, reward set to {drops} drop(s)')
         self.rewardGiven = False
         self.finishTrial = False
         self.sleepTime = 5
@@ -122,11 +126,13 @@ class ClassicalConditioning(Protocol):
 
     def sensor_handler_in(self):
         self.log('IRbeam was broken')
+        self.csvlogger.log(event='mouse entered well')
         self.beamBroken = True
         self.beamTimer = self.now()
 
     def sensor_handler_out(self):
         self.log('IRbeam was released')
+        self.csvlogger.log(event='mouse left well')
 
     def main(self,event):
         self.screen.fill(black)
@@ -151,8 +157,10 @@ class ClassicalConditioning(Protocol):
             if not self.rewardGiven:
                 self.sound.play(t1)
                 self.log('Sound played {}'.format(t1))
+                self.csvlogger.log(event=f'sound played: {t1}')
                 self.liqrew.drop()
                 self.rewardCount += 1
+                self.csvlogger.log(reward_count=self.rewardCount, event='reward given')
                 self.rewardGiven = True
                 self.log('Reward given. Total = {:d}'.format(self.rewardCount))
             else:
