@@ -788,9 +788,10 @@ def send_data_menu(surface):
     sdMenu = initialize_menu('Email Data')
     sdMenu.add.button('Set email address', set_email, surface)
     #sdMenu.add.text_input('Email Address: ', maxwidth=19, default=EMAIL, input_underline='_', onchange=set_email)
-    frameF = sdMenu.add.frame_h(760, 58)
-    frameF.pack(sdMenu.add.button('Add file', add_file), align='align-right')
-    frameF.pack(sdMenu.add.selector('File: ', FILE_NAMES, onchange=set_file), align='align-left')
+    
+    sdMenu.add.button('Add file', add_file)
+    sdMenu.add.selector('File: ', FILE_NAMES, onchange=set_file)
+    
     sdMenu.add.button('View attached files', view_file_list, surface)
     sdMenu.add.button('Send', send_email, surface)
 
