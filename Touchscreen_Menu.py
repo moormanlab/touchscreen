@@ -288,9 +288,9 @@ def liquid_reward_menu(liqrewdev):
     labelT = lr_menu.add.label(liqrew)
     frame = lr_menu.add.frame_h(700, 58)
     frame.pack(labelT, align=pygame_menu.locals.ALIGN_CENTER)
-    frame.pack(lr_menu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(lr_menu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frame.pack(lr_menu.add.button(' + ', increase_drop, labelT, border_width=2), align=pygame_menu.locals.ALIGN_CENTER)
-    frame.pack(lr_menu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frame.pack(lr_menu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frame.pack(lr_menu.add.button('  -  ', decrease_drop, labelT, border_width=2),
                align=pygame_menu.locals.ALIGN_CENTER)
 
@@ -379,16 +379,16 @@ def sound_menu(audio):
     frameF = sndMenu.add.frame_h(700, 58)
     frameF.pack(sndMenu.add.label('Frequency: '), align=pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(labelF, align=pygame_menu.locals.ALIGN_CENTER)
-    frameF.pack(sndMenu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add.button(' ++ ', change_frequency, labelF, 100, True, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)
-    frameF.pack(sndMenu.add._horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add.button(' + ', change_frequency, labelF, 10, True, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)
-    frameF.pack(sndMenu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add.button('  -  ', change_frequency, labelF, 10, False, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)
-    frameF.pack(sndMenu.add._horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
+    frameF.pack(sndMenu.add.horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
     frameF.pack(sndMenu.add.button('  --  ', change_frequency, labelF, 100, False, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)
 
@@ -396,16 +396,16 @@ def sound_menu(audio):
     frameA = sndMenu.add.frame_h(700, 58)
     frameA.pack(sndMenu.add.label('   Amplitude:'), align=pygame_menu.locals.ALIGN_CENTER)
     frameA.pack(labelA, align=pygame_menu.locals.ALIGN_CENTER)
-    frameA.pack(sndMenu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(sndMenu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frameA.pack(sndMenu.add.button(' ++ ', change_amplitude, labelA, True, True, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)
-    frameA.pack(sndMenu.add._horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(sndMenu.add.horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
     frameA.pack(sndMenu.add.button(' + ', change_amplitude, labelA, True, False, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)  # \u2795
-    frameA.pack(sndMenu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(sndMenu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frameA.pack(sndMenu.add.button('  -  ', change_amplitude, labelA, False, False, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)  # \u2796
-    frameA.pack(sndMenu.add._horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
+    frameA.pack(sndMenu.add.horizontal_margin(5), align=pygame_menu.locals.ALIGN_CENTER)
     frameA.pack(sndMenu.add.button('  --  ', change_amplitude, labelA, False, True, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)
 
@@ -413,10 +413,10 @@ def sound_menu(audio):
     frameT = sndMenu.add.frame_h(600, 58)
     frameT.pack(sndMenu.add.label('   Duration:'), align=pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(labelT, align=pygame_menu.locals.ALIGN_CENTER)
-    frameT.pack(sndMenu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frameT.pack(sndMenu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(sndMenu.add.button(' + ', change_duration, labelT, True, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)  # \u2795
-    frameT.pack(sndMenu.add._horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
+    frameT.pack(sndMenu.add.horizontal_margin(20), align=pygame_menu.locals.ALIGN_CENTER)
     frameT.pack(sndMenu.add.button('  -  ', change_duration, labelT, False, border_width=2),
                 align=pygame_menu.locals.ALIGN_CENTER)  # \u2796
 
