@@ -88,9 +88,9 @@ def initialize_menu(title):
     return menu
 
 
-def window_message(surface, message):
-    menu = pygame_menu.Menu('Warning', int(SCREENWIDTH * .75), int(SCREENHEIGHT * .75),
-                            theme=pygame_menu.themes.THEME_ORANGE,
+def window_message(surface, message, header='Warning'):
+    menu = pygame_menu.Menu(header, int(SCREENWIDTH * .75), int(SCREENHEIGHT * .75),
+                            theme=pygame_menu.themes.THEME_DARK,
                             onclose=pygame_menu.events.RESET,
                             touchscreen=True if isRaspberryPI() else False,
                             joystick_enabled=False,
@@ -130,7 +130,7 @@ def import_protocols(filename, surface):
     except Exception:
         msg = 'Exception when importing file: \n\{}.\nCheck logfile to see details'.format(filename)
         logger.exception('Exception when importing file {}'.format(filename))
-        window_message(surface, msg)
+        window_message(surface, msg, 'Exception')
         classes = []
 
     return classes
@@ -159,7 +159,7 @@ def protocol_run(protocol, surface, data):
     except Exception:
         msg = 'Exception running protocol  \n\t \'{}\'.\nCheck logfile to see details'.format(protocol.__name__)
         logger.exception('Exception running protocol {}'.format(protocol.__name__))
-        window_message(surface, msg)
+        window_message(surface, msg, 'Exception')
 
     return
 
@@ -591,17 +591,19 @@ def special_settings_menu(surface):
 
     def update_software():
         logger.info('Updating software')
+        header = 'Warning'
         if isRaspberryPI():
             ret = subprocess.call(['scripts/update.sh'])
             if ret == 0:
                 msg = 'Software updated successfully.\nA system restart is needed'
+                header = 'Success'
             else:
                 msg = 'Software update was unsuccessful.\nCheck system log file'
         else:
             msg = 'Running in PC, manual update required.\nRun "git pull"'
 
         logger.debug(msg)
-        window_message(surface, msg)
+        window_message(surface, msg, header)
 
     spMenu.add.vertical_margin(5)
     spMenu.add.button('Update Software', update_software)
@@ -778,7 +780,7 @@ def send_email(surface):
         # Send Email & Exit
         session.sendmail(GMAIL_USERNAME, recipient, msg.as_string())
         session.quit()
-        window_message(surface, 'Email Sent')
+        window_message(surface, 'Email Sent', 'Success')
     else:
         window_message(surface, 'No file selected')
 
