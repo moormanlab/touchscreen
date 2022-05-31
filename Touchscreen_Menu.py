@@ -21,12 +21,15 @@ from email.mime.text import MIMEText
 import smtplib
 import re
 import functools
+import json
 
 # Email Variables
 SMTP_SERVER = 'smtp.gmail.com'  # Email Server (don’t change!)
 SMTP_PORT = 587  # Server Port (don’t change!)
-GMAIL_USERNAME = 'moormanlabtouchscreen@gmail.com'
-GMAIL_PASSWORD = 'moormanlabTC'
+with open('creds.json') as f:
+    creds = json.load(f)
+GMAIL_USERNAME = creds.get('username')
+GMAIL_PASSWORD = creds.get('password')
 
 logger = logging.getLogger('TouchMenu')
 

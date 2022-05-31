@@ -5,6 +5,10 @@ __pycache__/
 # Temporal Files
 *.swp
 *.log
+*.json
 
 # CAD Files
 *.stl
+
+# mac
+*.DS_Store
