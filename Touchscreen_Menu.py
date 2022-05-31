@@ -35,7 +35,7 @@ if not os.path.isdir(logPath):
     os.mkdir(logPath)
 # print(logPath)
 protocolsPath = 'protocols'
-userLogHdlr = None
+formatDate = '%Y/%m/%d@@%H:%M:%S'
 touchDBFile = 'touchDB.json'
 touchDB = tinydb.TinyDB(touchDBFile)
 
@@ -137,7 +137,7 @@ def import_protocols(filename, surface):
 
 
 def protocol_run(protocol, surface, data):
-    global userLogHdlr
+    
 
     logger.debug('Starting protocol {}'.format(protocol.__name__))
 
@@ -148,8 +148,15 @@ def protocol_run(protocol, surface, data):
         protoc = protocol(surface, subject=data[0], experimenter=data[1])
 
         # create new log file for protocol running
-        now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
-        userLogHdlr.baseFilename = os.path.join(logPath, protocol.__name__ + '_' + now + '.log')
+        now = datetime.datetime.now().strftime('%Y%m%d-%H%M') # get date for protocol log file
+        userFormatStr = '%(asctime)s.%(msecs)03d@@%(message)s'
+        userFormatter = logging.Formatter(fmt=userFormatStr, datefmt=formatDate) 
+        userLogFile = os.path.join(logPath, protocol.__name__ + '_' + now + '.log')
+        userLogHdlr = logging.FileHandler(userLogFile, mode='w') # create protocol log handler
+        userLogHdlr.setLevel(logging.INFO)
+        userLogHdlr.setFormatter(userFormatter)
+        userLogHdlr.close()
+        
 
         protoc._init(userLogHdlr)
         protoc._run()
@@ -890,11 +897,10 @@ def initialize_logging():
     msg = 'Synchronizing time disabled'
 
     # Initialize logging
-    formatDate = '%Y/%m/%d@@%H:%M:%S'
+    #formatDate = '%Y/%m/%d@@%H:%M:%S'
     sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
     sysFormatter = logging.Formatter(fmt=sysFormatStr, datefmt=formatDate)
-    userFormatStr = '%(asctime)s.%(msecs)03d@@%(message)s'
-    userFormatter = logging.Formatter(fmt=userFormatStr, datefmt=formatDate)
+
 
     log = logging.getLogger()
     logOpt = table.get(tinydb.Query().logDebugOn.exists())['logDebugOn']
@@ -914,18 +920,11 @@ def initialize_logging():
     systemLogHdlr = logging.FileHandler(systemLogFile, mode='w')
     systemLogHdlr.setFormatter(sysFormatter)
     log.addHandler(systemLogHdlr)
-
-    global userLogHdlr
-    # prepare userLog Handler with dummy log file
-    userLogFile = os.path.join(logPath, now + '-userprotocol.log')
-    userLogHdlr = logging.FileHandler(userLogFile, mode='w')
-    userLogHdlr.setLevel(logging.INFO)
-    userLogHdlr.setFormatter(userFormatter)
-    userLogHdlr.close()
+ 
     logger.info('Logging initialized')
     logger.debug(msg)
     # logger.debug('{}'.format(showip.getip()))
-
+    
 
 def dbGetAll(subjectType):
     table = touchDB.table(subjectType)
