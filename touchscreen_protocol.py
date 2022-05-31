@@ -158,6 +158,9 @@ class Protocol(BaseProtocol):
         logger.info('Start running protocol {}'.format(self.__class__.__name__))
         pressed = False
         clock = pygame.time.Clock()
+        # check that csvlogger was activated or activate it
+        if not self.csvlogger.is_active():
+            self.csvlogger.start()
         while not self._exit:
             clock.tick(self._fps)
             events = pygame.event.get()

@@ -11,6 +11,7 @@ class CSVLogger:
         self.__set_filename(protocol, subject, experimenter)
         self._header = ['time', 'method', 'event', 'x-cord', 'y-cord']
         self.__csvfile = open(self.filename, 'w', newline='')
+        self.__is_active = False
 
 
     def configure(self, header=None, replace=False):
@@ -23,6 +24,10 @@ class CSVLogger:
     def start(self):
         self.__writer = csv.DictWriter(self.__csvfile, fieldnames=self._header, extrasaction='ignore')
         self.__writer.writeheader()
+        self.__is_active = True
+
+    def is_active(self):
+        return self.__is_active
 
     def log(self, method=None, event=None, **kwargs):
         fields = {'time': self.time_delta()}
