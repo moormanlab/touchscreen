@@ -796,11 +796,10 @@ def send_data_menu(surface):
     FILE_LIST.clear()
     sdMenu = initialize_menu('Email Data')
     sdMenu.add.button('Set email address', set_email, surface)
-    #sdMenu.add.text_input('Email Address: ', maxwidth=19, default=EMAIL, input_underline='_', onchange=set_email)
     
-    sdMenu.add.button('Add file', add_file)
     sdMenu.add.selector('File: ', FILE_NAMES, onchange=set_file)
-    
+    sdMenu.add.button('Add file', add_file)
+
     sdMenu.add.button('View attached files', view_file_list, surface)
     sdMenu.add.button('Send', send_email, surface)
 
