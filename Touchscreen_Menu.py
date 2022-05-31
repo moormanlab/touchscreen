@@ -36,7 +36,7 @@ logger = logging.getLogger('TouchMenu')
 logPath = os.path.abspath('logs')
 if not os.path.isdir(logPath):
     os.mkdir(logPath)
-# print(logPath)
+
 protocolsPath = 'protocols'
 formatDate = '%Y/%m/%d@@%H:%M:%S'
 touchDBFile = 'touchDB.json'
@@ -59,7 +59,6 @@ def update_list():
             i += 1
             FILE_NAMES.append((filename, i))
     FILE_NAMES.sort()
-    #print(FILE_NAMES[0][0])
     SELECTED_FILE_PATH[0] = os.path.join(logPath, FILE_NAMES[0][0])
 
 
@@ -704,7 +703,7 @@ def view_file_list(surface):
 def add_file():
     if SELECTED_FILE_PATH[0] not in FILE_LIST:
         FILE_LIST.append(SELECTED_FILE_PATH[0])
-        print(FILE_LIST)
+
 
 """
 # Original email function
@@ -746,7 +745,7 @@ def send_email(surface):
         """
         # Create Headers
         recipient = EMAIL
-        print(recipient)
+
         msg = MIMEMultipart()
         msg['Subject'] = "Your Touchscreen Data"
         msg['From'] = GMAIL_USERNAME
@@ -770,7 +769,7 @@ def send_email(surface):
                             # assume first two fields are 24 chars, add quotes to third field
                             # not robust, must fix
                             line = line[:24] + "\"" + line[24:-1] + "\"\n"
-                            #print(line)
+
                             csvfile.write(line)
                     csvfile.close()
                 file.close()
