@@ -5,25 +5,97 @@ Touchscreen Project
 
 ## Installation
 
-After installing Raspberry Pi OS
+Flash micro SD card with Raspberry Pi OS and insert into Raspberry Pi
 
+On first boot open the Terminal
 ```bash
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install python3-virtualenv
+sudo raspi-config
+````
+select `Interface Options` and select and enable SSH and VNC. Then select `Finish`
+
+Next, to connect to WiFi run `sudo nano /etc/wpa_supplicant/wpa_supplicant.conf`
+and enter the following where `NETWORK_SSID` is your network name and `NETWORK_PASSWORD` is your network password
+```
+country=US
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+
+network={
+     ssid="NETWORK_SSID"
+     psk="NETWORK_PASSWORD"
+     key_mgmt=WPA-PSK
+}
+```
+Then run `sudo reboot`
+
+If you are connected, skip to the [setup](#Setup) section
+
+---
+
+**For eudroam**
+Instead enter the following in `wpa_supplicant.conf`
+```
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=US
+network={
+    ssid="eduroam"
+    proto=RSN
+    key_mgmt=WPA-EAP
+    pairwise=CCMP
+    auth_alg=OPEN
+    eap=TTLS
+    identity="NETID@umass.edu"
+    anonymous_identity="NETID@umass.edu"
+    password="NETIDPASSWORD"
+    phase2="auth=PAP"
+}
+```
+Then enter `sudo nano /etc/wpa_supplicant/functions.sh`
+
+On line 218 change
+`WPA_SUP_OPTIONS="$WPA_SUP_OPTIONS -D nl80211,wext"` to `WPA_SUP_OPTIONS="$WPA_SUP_OPTIONS -D wext,nl80211"`
+
+**do the same on line 227** and then save the file
+
+run `sudo reboot`
+
+
+---
+
+## Setup
+Once connected to the internet run
+```bash
+sudo apt update
+sudo apt upgrade -y 
+sudo apt install -y python3-virtualenv 
 cd ~
+rm -rf touchscreen touchenv
 git clone https://github.com/moormanlab/touchscreen
 python3 -m venv touchenv
 source ~/touchenv/bin/activate
 pip install --upgrade pip setuptools
-pip install -r touchscreen/requirements.txt
 export CFLAGS=-fcommon
-pip3 install rpi.gpio
+pip install -r touchscreen/requirements.txt
 cp ~/touchscreen/scripts/touch.desktop ~/.local/share/applications
 mkdir ~/.config/autostart
 cp ~/touchscreen/scripts/touch.desktop ~/.config/autostart
-reboot
+sudo apt install libsdl2-mixer-2.0-0 libsdl2-2.0-0 libsdl2-ttf-2.0-0
 ```
+To send data by email create a file called `creds.json` in the `touchscreen` directory
+Inside the `creds.json` enter `{"username": "EMAIL", "password": "PASSWORD"}`
+
+*Note for Gmail users*
+
+- Due to changes by Google as of May 30th, 2022, you can no longer use the gmail accounts password in this application.
+	- Instead go to google security settings
+		- Enable 2-Step Verification
+		- Once enabled, select `App passwords` (also in Security settings)
+		- under Select app, choose `Mail` and for Select device, Select `Other` and enter a custom name
+		- **A popup window will apear with a 16 letter passcode. Enter this for PASSWORD in `creds.json`**
+
+Finally run `sudo reboot` 
+Once the device has rebooted with the menu open, select speacial settings and configure the hardware settings as seen fit.
 
 ---
 
