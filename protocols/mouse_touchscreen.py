@@ -8,7 +8,7 @@ from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTER
 #colors
 from csv_logging import CSVLogger
 from touchscreen_protocol import tTone
-t1 = tTone(frequency = 18000, duration = 0.2, amplitude = 0.07)
+t1 = tTone(frequency = 18000, duration = 0.2, amplitude = 0.2)
 
 from touchscreen_protocol import tsColors
 red    = tsColors['red']
