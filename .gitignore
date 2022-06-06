@@ -6,6 +6,7 @@ __pycache__/
 *.swp
 *.log
 *.json
+*.csv
 
 # CAD Files
 *.stl
