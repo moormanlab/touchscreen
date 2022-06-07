@@ -11,7 +11,14 @@ On first boot open the Terminal
 ```bash
 sudo raspi-config
 ````
-select `Interface Options` and select and enable SSH and VNC. Then select `Finish`
+select `Interface Options` and select and enable 
+ - SSH
+ - VNC
+ - I2C
+ - Serial Port
+ 	- when prompted about a login shell over serial, respond **No**
+ 	- when promted about serial port hardware, respond **Yes**
+ once all Interface Options have been enabled, select Finish
 
 Next, to connect to WiFi run `sudo nano /etc/wpa_supplicant/wpa_supplicant.conf`
 and enter the following where `NETWORK_SSID` is your network name and `NETWORK_PASSWORD` is your network password
