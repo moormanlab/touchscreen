@@ -199,8 +199,8 @@ class Protocol(BaseProtocol):
 
     def _end(self):
         logger.info('End running protocol {}'.format(self.__class__.__name__))
-        del self.csvlogger
         self.end()
+        del self.csvlogger
 
     def main(self,event):
         pass

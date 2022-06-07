@@ -17,7 +17,7 @@ blue   = tsColors['blue']
 black  = tsColors['black']
 yellow = tsColors['yellow']
 dark_gray = tsColors['darkgray']
-
+deepskyblue = tsColors['deepskyblue']
 REWARD_WINDOW = 15.0
 INTER_TOUCHS_TIME = 1.0
 
@@ -29,22 +29,29 @@ class OperantConditioning(Protocol):
 
     def init(self):
         self.set_log_filename('OpCond')
-        self.log('Operant Conditioning Started')
-        self.liqrew.set_drop_amount(2) # drop amount, adjust as needed
+        self.csvlogger.configure(header=['reward_count', 'rewards_missed', 'no_reward'], replace=False)
+        self.csvlogger.start()
+        drops = 50
+        self.liqrew.set_drop_amount(drops) # drop amount, adjust as needed
+        self.log(self.csvlogger.log(event=f'Operant Conditioning Started, reward set to {drops} drop(s)'))
         self.beam_broken = False
         self.beam_timer = 0
         self.mouse_at_spout = False
         self.touch_time = 0
         self.reward_count = 0
         self.reward_missed = 0
+        self.no_reward = 0
         self.reward_active = False
-        self.screen.setBackcolor = (0,0,0)
-        self.set_note('Weight')
+        #self.screen.setBackcolor((0,0,0))
+        #self.set_note('Weight')
 
     def sensor_handler_in(self):
         self.log('IRbeam was broken')
+        self.csvlogger.log(event='IRbeam broken')
         self.beam_broken = True
         self.beam_timer = self.now()
+    def sensor_handler_out(self):
+        self.csvlogger.log(event='IRbeam released')
 
     def main(self,event):
         # Fill the background with black
@@ -55,9 +62,10 @@ class OperantConditioning(Protocol):
                 self.reward_active = False
                 self.log('Animal did not come for reward')
                 self.reward_missed += 1
-                self.log('Reward miseed. Total = {:d}'.format(self.reward_missed))
+                self.log('Reward missed. Total = {:d}'.format(self.reward_missed))
+                self.csvlogger.log(event='Reward missed',reward_count=self.reward_count, rewards_missed=self.reward_missed)
             else:
-                self.screen.fill(dark_gray)
+                self.screen.fill(deepskyblue)
         
         self.screen.update()
 
@@ -68,10 +76,13 @@ class OperantConditioning(Protocol):
                 # a reward was given, the mouse is collecting
                 self.reward_count += 1
                 self.log('Animal got reward. Total = {:d}'.format(self.reward_count))
+                self.csvlogger.log(event='Reward recieved',reward_count=self.reward_count, rewards_missed=self.reward_missed)
                 self.reward_active = False
             else:
                 # there is no reward but mouse is exploring
                 self.log('Mouse at well without reward')
+                self.no_reward += 1
+                self.csvlogger.log(event='No reward active',reward_count=self.reward_count, rewards_missed=self.reward_missed, no_reward=self.no_reward)
             self.beam_broken = False
     
         if self.sensor.is_activated() == False:
@@ -96,6 +107,7 @@ class OperantConditioning(Protocol):
         self.log('Training Ended')
         self.log('Total rewards {}'.format(self.reward_count))
         self.log('Total missed {}'.format(self.reward_missed))
+        self.csvlogger.log(event='Training ended', reward_count=self.reward_count, rewards_missed=self.reward_missed, no_reward=self.no_reward)
 
 
 
@@ -141,7 +153,7 @@ class ClassicalConditioning(Protocol):
         #Stops program for X seconds after a trial is completed 
         if self.finishTrial == True:
             #Turns screen gray to make sure it's working 
-            self.screen.fill(dark_gray)
+            self.screen.fill(deepskyblue)
             self.screen.update()
             #Sleeps program for X seconds
             self.pause(self.sleepTime)
@@ -249,7 +261,7 @@ class BehavioralTestProtocol(Protocol):
         return
 
     def end(self):
-        self.set_note('Something the user would like to write in the log file')
+        #self.set_note('Something the user would like to write in the log file')
         self.log('Finished')
 
 
