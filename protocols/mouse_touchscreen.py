@@ -8,7 +8,7 @@ from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTER
 #colors
 from csv_logging import CSVLogger
 from touchscreen_protocol import tTone
-t1 = tTone(frequency = 18000, duration = 0.2, amplitude = 0.2)
+t1 = tTone(frequency = 2000, duration = 0.2, amplitude = 0.3)
 
 from touchscreen_protocol import tsColors
 red    = tsColors['red']
@@ -63,9 +63,9 @@ class OperantConditioning(Protocol):
                 self.log('Animal did not come for reward')
                 self.reward_missed += 1
                 self.log('Reward missed. Total = {:d}'.format(self.reward_missed))
-                self.csvlogger.log(event='Reward missed',reward_count=self.reward_count, rewards_missed=self.reward_missed)
+                self.csvlogger.log(event='Reward missed', rewards_missed=self.reward_missed)
             else:
-                self.screen.fill(deepskyblue)
+                self.screen.fill((0,85,85))
         
         self.screen.update()
 
@@ -76,13 +76,13 @@ class OperantConditioning(Protocol):
                 # a reward was given, the mouse is collecting
                 self.reward_count += 1
                 self.log('Animal got reward. Total = {:d}'.format(self.reward_count))
-                self.csvlogger.log(event='Reward recieved',reward_count=self.reward_count, rewards_missed=self.reward_missed)
+                self.csvlogger.log(event='Reward recieved', reward_count=self.reward_count)
                 self.reward_active = False
             else:
                 # there is no reward but mouse is exploring
                 self.log('Mouse at well without reward')
                 self.no_reward += 1
-                self.csvlogger.log(event='No reward active',reward_count=self.reward_count, rewards_missed=self.reward_missed, no_reward=self.no_reward)
+                self.csvlogger.log(event='No reward active', no_reward=self.no_reward)
             self.beam_broken = False
     
         if self.sensor.is_activated() == False:
@@ -153,7 +153,7 @@ class ClassicalConditioning(Protocol):
         #Stops program for X seconds after a trial is completed 
         if self.finishTrial == True:
             #Turns screen gray to make sure it's working 
-            self.screen.fill(deepskyblue)
+            self.screen.fill((0, 85, 85))
             self.screen.update()
             #Sleeps program for X seconds
             self.pause(self.sleepTime)
