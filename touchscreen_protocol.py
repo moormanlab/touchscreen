@@ -181,8 +181,9 @@ class Protocol(BaseProtocol):
                         pressed = False
 
                     if tEvent.type and tEvent != last_event:
+                        if not return_to_menu.closing:
+                            self.csvlogger.log(event=tEvent, method='main')
                         self.logger.debug('{}: Coord ({},{})'.format(str(tEvent.get_type()),tEvent.position[0],tEvent.position[1]))
-                        self.csvlogger.log(event=tEvent, method='main')
                     last_event = tEvent
 
                     # only on PC
