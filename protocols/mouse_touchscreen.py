@@ -31,9 +31,8 @@ class OperantConditioning(Protocol):
         self.set_log_filename('OpCond')
         self.csvlogger.configure(header=['reward_count', 'rewards_missed', 'no_reward'], replace=False)
         self.csvlogger.start()
-        drops = 50
-        self.liqrew.set_drop_amount(drops) # drop amount, adjust as needed
-        self.log(self.csvlogger.log(event=f'Operant Conditioning Started, reward set to {drops} drop(s)'))
+        self.liqrew.set_drop_amount(1) # drop amount, adjust as needed
+        self.log(self.csvlogger.log(event='Operant Conditioning Started, reward set to 10 ul'))
         self.beam_broken = False
         self.beam_timer = 0
         self.mouse_at_spout = False
@@ -123,9 +122,8 @@ class ClassicalConditioning(Protocol):
         self.csvlogger.start()
         self.set_log_filename('ClassCond')
         self.log('Classical Conditioning Started')
-        drops = 50
-        self.liqrew.set_drop_amount(drops) # drop amount of liquid reward, adjust as needed
-        self.csvlogger.log(event=f'Classical Conditioning Started, reward set to {drops} drop(s)')
+        self.liqrew.set_drop_amount(1) # drop amount of liquid reward, adjust as needed
+        self.csvlogger.log(event='Classical Conditioning Started, reward set to 10 ul')
         self.rewardGiven = False
         self.finishTrial = False
         self.sleepTime = 5
