@@ -26,7 +26,7 @@ import json
 # Email Variables
 SMTP_SERVER = 'smtp.gmail.com'  # Email Server (don’t change!)
 SMTP_PORT = 587  # Server Port (don’t change!)
-with open('creds.json') as f:
+with open('creds.json', errors='ignore') as f:
     creds = json.load(f)
 GMAIL_USERNAME = creds.get('username')
 GMAIL_PASSWORD = creds.get('password')
@@ -34,8 +34,8 @@ GMAIL_PASSWORD = creds.get('password')
 logger = logging.getLogger('TouchMenu')
 
 logPath = os.path.abspath('logs')
-if not os.path.isdir(logPath):
-    os.mkdir(logPath)
+
+
 
 protocolsPath = 'protocols'
 formatDate = '%Y/%m/%d@@%H:%M:%S'
@@ -55,11 +55,15 @@ def update_list():
     i = 0
     files = os.listdir(logPath)
     for filename in files:
-        if filename.endswith(('.log', '.csv')):
+        #if filename.endswith(('.log', '.csv')):
+        if filename.endswith('.csv'): # now only shows csv files
             i += 1
             FILE_NAMES.append((filename, i))
     FILE_NAMES.sort()
-    SELECTED_FILE_PATH[0] = os.path.join(logPath, FILE_NAMES[0][0])
+    try:
+        SELECTED_FILE_PATH[0] = os.path.join(logPath, FILE_NAMES[0][0])
+    except IndexError:
+        SELECTED_FILE_PATH[0] = ''
 
 
 # hardware_initialized = False
@@ -88,6 +92,7 @@ def initialize_menu(title):
     logger.debug('Menu created: {}'.format(title))
 
     return menu
+
 
 
 def window_message(surface, message, header='Warning'):
@@ -130,7 +135,7 @@ def import_protocols(filename, surface):
         # Retrieves classes from module
         classes = inspect.getmembers(module, inspect.isclass)
     except Exception:
-        msg = 'Exception when importing file: \n\{}.\nCheck logfile to see details'.format(filename)
+        msg = 'Exception when importing file: \n{}.\nCheck logfile to see details'.format(filename)
         logger.exception('Exception when importing file {}'.format(filename))
         window_message(surface, msg, 'Exception')
         classes = []
@@ -200,7 +205,6 @@ def function_menu(filename, data, surface):
 
     fMenu.mainloop(surface, fps_limit=30)
 
-
 def scan_directory(dirPath):
     # Scans directory for relevent python files and returns the file names as an array
     # List of file names in directory
@@ -214,6 +218,7 @@ def scan_directory(dirPath):
     files.sort()
 
     return files
+
 
 
 def files_menu(data, surface):
@@ -758,7 +763,7 @@ def send_email(surface):
             if path_to_file.endswith('.csv'):
                 path_to_csv = path_to_file
             # if the file is still in deliminated log format, convert it and add to email
-            elif path_to_file.endswith('.log'):
+            elif path_to_file.endswith('.log'): # this branch is no longer used (to remove)
                 path_to_csv = path_to_file[:-3] + "csv"
                 # convert log file to csv
                 with open(path_to_file, 'r') as file:
@@ -790,6 +795,9 @@ def send_email(surface):
         session.sendmail(GMAIL_USERNAME, recipient, msg.as_string())
         session.quit()
         window_message(surface, 'Email Sent', 'Success')
+        for path_to_file in FILE_LIST: # delete all sent csv files from system once sent
+            os.remove(path_to_file)
+        update_list()
     else:
         window_message(surface, 'No file selected')
 
@@ -797,15 +805,20 @@ def send_data_menu(surface):
     update_list()
     FILE_LIST.clear()
     sdMenu = initialize_menu('Email Data')
-    sdMenu.add.button('Set email address', set_email, surface)
+    if FILE_NAMES != []:
+        sdMenu.add.button('Set email address', set_email, surface)
+        sdMenu.add.selector('File: ', FILE_NAMES, onchange=set_file)
+        sdMenu.add.button('Add file', add_file)
+        sdMenu.add.button('View attached files', view_file_list, surface)
+        sdMenu.add.button('Send', send_email, surface)
+    else:
+        sdMenu.add.label('No Files')
     
-    sdMenu.add.selector('File: ', FILE_NAMES, onchange=set_file)
-    sdMenu.add.button('Add file', add_file)
 
-    sdMenu.add.button('View attached files', view_file_list, surface)
-    sdMenu.add.button('Send', send_email, surface)
+
 
     add_close_button(sdMenu)
+    
     sdMenu.mainloop(surface, fps_limit=30)
 
 
@@ -855,7 +868,6 @@ def create_surface():
 #
 #     return msg
 
-
 def initialize_hardware() -> None:
     table = touchDB.table('settings')
 
@@ -885,8 +897,9 @@ def initialize_hardware() -> None:
 #    if food_reward != 'None':
 #        foodrew = FoodReward(variant=food_reward)
 
-
 def initialize_logging():
+    if not os.path.isdir(logPath):
+        os.mkdir(logPath)
     table = touchDB.table('settings')
     syncOpt = table.get(tinydb.Query().syncOn.exists())['syncOn']
 
@@ -937,7 +950,6 @@ def dbGetAll(subjectType):
 
     return nameList
 
-
 def database_init():
     table = touchDB.table('settings')
     initOpt = table.get(tinydb.Query().init.exists())
@@ -958,9 +970,7 @@ def main_menu():
     #update_list()
     pygame.init()
     database_init()
-
     initialize_logging()
-
     logger.debug('Running in Raspberry PI = {}'.format(isRaspberryPI()))
 
     # Creates surface based on machine
@@ -1041,11 +1051,13 @@ def main_menu():
         menu.mainloop(surface, fps_limit=30)
     except Exception:
         logger.exception('Exception running mainloop')
-
     logger.info('Exiting Menu')
 
     return
 
 
+
 if __name__ == "__main__":
     main_menu()
+    if not isRaspberryPI():
+        IRSensor(variant='sparkfuncustom')._close()
