@@ -4,13 +4,12 @@ Code written by Jason Biundo, version 1.1 10/2020
 Updated by Ariel Burman, 04/2021
 
 '''
-from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED
+from touchscreen_protocol import BaseProtocol, Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED, tTone, tsColors
 #colors
-from csv_logging import CSVLogger
-from touchscreen_protocol import tTone
-t1 = tTone(frequency = 2000, duration = 0.2, amplitude = 0.3)
 
-from touchscreen_protocol import tsColors
+t1 = tTone(frequency = 2000, duration = 0.2, amplitude = 0.03)
+
+
 red    = tsColors['red']
 green  = tsColors['green']
 blue   = tsColors['blue']
@@ -145,14 +144,14 @@ class ClassicalConditioning(Protocol):
         self.csvlogger.log(event='mouse left well')
 
     def main(self,event):
-        self.screen.fill(black)
-        self.screen.update()
+        if self.beamBroken == False:
+            self.screen.fill(black)
+            self.screen.update()
 
         #Stops program for X seconds after a trial is completed 
         if self.finishTrial == True:
             #Turns screen gray to make sure it's working 
-            self.screen.fill((0, 85, 85))
-            self.screen.update()
+            #self.screen.fill((0, 85, 85))
             #Sleeps program for X seconds
             self.pause(self.sleepTime)
             self.log('Finished Trial. Waiting to start next trial')
@@ -175,6 +174,9 @@ class ClassicalConditioning(Protocol):
                 self.log('Reward given. Total = {:d}'.format(self.rewardCount))
             else:
                 self.log('Reward for this trial already delivered')
+            width, height = self.screen.get_size()
+            self.draw.rect(color=(0, 65, 65), center=(width//2, height//2), size=(height*0.3, height*0.3))
+            self.screen.update()
     
         if (self.mouseAtWell == True) and (self.sensor.is_activated() == False):
             self.log('Mouse has left well')
@@ -191,6 +193,7 @@ class ClassicalConditioning(Protocol):
     def end(self):
         self.log('Training Ended')
         self.log('Results {}'.format(self.rewardCount))
+        self.csvlogger.log(event='Training ended', reward_count=self.rewardCount)
 
 
 
