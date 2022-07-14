@@ -4,7 +4,7 @@ from gpiozero import DigitalInputDevice
 from gpiozero.pins.mock import MockFactory
 from abc import ABC, abstractmethod
 
-from arch import isRaspberryPI
+from utils.arch import isRaspberryPI
 
 logger = logging.getLogger('HALSensor')
 

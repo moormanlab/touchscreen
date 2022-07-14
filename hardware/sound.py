@@ -9,7 +9,7 @@ import array
 import random
 from abc import ABC, abstractmethod
 
-from arch import isRaspberryPI
+from utils.arch import isRaspberryPI
 
 TAU = 2*math.pi
 pf = None if isRaspberryPI() else MockFactory(pin_class=MockPWMPin)

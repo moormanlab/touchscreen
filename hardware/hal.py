@@ -6,7 +6,7 @@ import time
 import logging
 import gpiozero
 
-from arch import isRaspberryPI
+from utils.arch import isRaspberryPI
 
 logger = logging.getLogger('touchHAL')
 
@@ -35,7 +35,7 @@ food reward:
 ########################################
 ## Sound
 ########################################
-from sound import SparkFunBuzzer, CustomSpeaker
+from .sound import SparkFunBuzzer, CustomSpeaker
 class Sound():
 
     __instance = None
@@ -87,7 +87,7 @@ class Sound():
 ########################################
 ## IR Reward Sensor
 ########################################
-from sensor import AdafruitSensor, SparkfunCustomIrSensor
+from .sensor import AdafruitSensor, SparkfunCustomIrSensor
 class IRSensor(object):
 
     __instance = None
@@ -153,7 +153,7 @@ class IRSensor(object):
 ########################################
 ## Liquid Reward
 ########################################
-from liqrew import LeeValve, LeePump
+from .liqrew import LeeValve, LeePump
 
 class LiqReward(object):
     __instance = None
@@ -238,7 +238,7 @@ class LiqReward(object):
 ############
 # Battery
 ############
-from battery import UPSV3P2Bat
+from .battery import UPSV3P2Bat
 
 class Battery(object):
     __instance = None
