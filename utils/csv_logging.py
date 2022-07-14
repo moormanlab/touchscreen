@@ -3,7 +3,7 @@ import functools
 import datetime
 import os
 import inspect
-
+from .utils import logPath
 
 class CSVLogger:
     def __init__(self, protocol: str, subject=None, experimenter=None):
@@ -47,6 +47,5 @@ class CSVLogger:
         return diff.total_seconds()
 
     def __set_filename(self, protocol, subject, experimenter):
-        logPath = os.path.abspath('logs')
         file_name = protocol+'_'+subject+'_'+experimenter+'_'+self._start.strftime('%-m_%-d-%H_%M')+'.csv'
         self.filename = os.path.join(logPath, file_name)

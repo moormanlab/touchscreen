@@ -2,7 +2,7 @@ import pygame
 import time
 import logging
 
-from utils import SCREENWIDTH, SCREENHEIGHT, getPosition
+from .utils import SCREENWIDTH, SCREENHEIGHT, getPosition
 
 CLOSINGBOXSIZE = 40
 logger = logging.getLogger('retMenu')

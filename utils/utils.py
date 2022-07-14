@@ -26,4 +26,4 @@ def getPosition(event):
     elif event.type in [pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP]:
         return(int(event.x*SCREENWIDTH),int(event.y*SCREENHEIGHT))
     return (-1,-1)
-
+    
