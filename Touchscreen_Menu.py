@@ -10,10 +10,25 @@ import time
 import tinydb
 
 # import showip
-from keyboard import keyboard
+from utils.keyboard import keyboard
 #from return_to_menu import return_to_menu
-from hal import isRaspberryPI, LiqReward, IRSensor, Sound, Battery
-from utils import SCREENWIDTH, SCREENHEIGHT
+from hardware.hal import isRaspberryPI, LiqReward, IRSensor, Sound, Battery
+from utils.utils import (
+    create_surface, 
+    touchDBFile, 
+    protocolsPath, 
+    logPath, 
+    initialize_hardware, 
+    initialize_logging, 
+    scan_directory, 
+    database_init,
+    initialize_menu, 
+    formatDate,
+    close_IRSensor_thread,
+    SCREENWIDTH,
+    SCREENHEIGHT
+)
+
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
@@ -33,13 +48,11 @@ GMAIL_PASSWORD = creds.get('password')
 
 logger = logging.getLogger('TouchMenu')
 
-logPath = os.path.abspath('logs')
 
 
 
-protocolsPath = 'protocols'
-formatDate = '%Y/%m/%d@@%H:%M:%S'
-touchDBFile = 'touchDB.json'
+
+
 touchDB = tinydb.TinyDB(touchDBFile)
 
 EMAIL=""
@@ -47,6 +60,8 @@ SELECTED_FILE_PATH = [""]
 FILE_LIST = []
 FILE_NAMES = []
 
+EXIT = False
+RELOAD = False
 def update_list():
     """
     Updates email list to choose from in send_data menu
@@ -79,19 +94,6 @@ def add_close_button(menu):
     menu.add.button('Back', pygame_menu.events.CLOSE)
 
 
-def initialize_menu(title):
-    # Creates menu, adding title, and enabling touchscreen mode
-    menu = pygame_menu.Menu(title, SCREENWIDTH, SCREENHEIGHT,
-                            theme=pygame_menu.themes.THEME_DARK,
-                            onclose=pygame_menu.events.RESET,
-                            touchscreen=True if isRaspberryPI() else False,
-                            joystick_enabled=False,
-                            mouse_enabled=False if isRaspberryPI() else True,
-                            )
-
-    logger.debug('Menu created: {}'.format(title))
-
-    return menu
 
 
 
@@ -205,19 +207,7 @@ def function_menu(filename, data, surface):
 
     fMenu.mainloop(surface, fps_limit=30)
 
-def scan_directory(dirPath):
-    # Scans directory for relevent python files and returns the file names as an array
-    # List of file names in directory
-    files = []
 
-    # Goes through each file and checks if they are python files
-    for filename in os.listdir(dirPath):
-        if filename.endswith('.py'):
-            files.append(filename)
-
-    files.sort()
-
-    return files
 
 
 
@@ -439,6 +429,54 @@ def sound_menu(audio):
     add_back_button(sndMenu)
 
     return sndMenu
+
+def server_menu(surface):
+    serverMenu = initialize_menu('Server Settings')
+    table = touchDB.table('settings')
+
+    if not table.get(tinydb.Query().server.exists()):
+        table.insert({'server': 'None'})
+
+    def get_server():
+        server = table.get(tinydb.Query().server.exists())['server']
+        return server
+
+    lbl = serverMenu.add.label('Current Address: {}'.format(get_server()))
+    serverMenu.add.vertical_margin(20)
+    
+
+    def set_server():
+        current_server = table.get(tinydb.Query().server.exists())
+        server = keyboard(surface)
+        if server != '':
+            table.update({'server': server}, doc_ids=[current_server.doc_id])
+        lbl.set_title('Current Address: {}'.format(get_server()))
+
+
+    serverMenu.add.button('Set Server Address', set_server)
+
+    def connect_server():
+        #source = table.get(tinydb.Query().isClient.exists())
+        #table.update({'isClient': True}, doc_ids=[source.doc_id])
+
+        msg = 'Attempting to connect to {}\nApplication will restart'.format(get_server())
+        window_message(surface, msg, header='Confirmation')
+        serverMenu.disable()
+        global RELOAD
+        RELOAD = True
+        global EXIT
+        EXIT = True
+        
+
+
+    serverMenu.add.button('connect', connect_server)
+
+    add_back_button(serverMenu)
+
+    return serverMenu
+
+
+
 
 
 def special_settings_menu(surface):
@@ -674,7 +712,11 @@ def settings_menu(surface):
     if audio != 'None':
         sndMenu = sound_menu(audio)
         sMenu.add.button(sndMenu.get_title(), sndMenu)
-
+    
+    if __name__ != '__main__': # check that menu being run by other module for server settings
+        serverMenu = server_menu(surface)
+        sMenu.add.button(serverMenu.get_title(), serverMenu)
+    
     sMenu.add.vertical_margin(10)
     confirm_menu = shutdown_pi_menu()
     sMenu.add.button(confirm_menu.get_title(), confirm_menu)
@@ -797,7 +839,6 @@ def send_email(surface):
         window_message(surface, 'Email Sent', 'Success')
         for path_to_file in FILE_LIST: # delete all sent csv files from system once sent
             os.remove(path_to_file)
-        update_list()
     else:
         window_message(surface, 'No file selected')
 
@@ -818,20 +859,10 @@ def send_data_menu(surface):
 
 
     add_close_button(sdMenu)
-    
     sdMenu.mainloop(surface, fps_limit=30)
 
 
-def create_surface():
-    # Creates surface
-    # make fullscreen on touchscreen
-    if isRaspberryPI():
-        surface = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), pygame.FULLSCREEN)
-        pygame.mouse.set_cursor((8, 8), (0, 0), (0, 0, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0, 0))
-    else:
-        surface = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
 
-    return surface
 
 
 # def piSynchronizeTime():
@@ -868,76 +899,14 @@ def create_surface():
 #
 #     return msg
 
-def initialize_hardware() -> None:
-    table = touchDB.table('settings')
 
-    batteryObj = table.get(tinydb.Query().battery.exists())
-    batt = batteryObj['battery']
-    if batt:
-        battery = Battery()
-        if not battery.detect_battery():
-            table.update({'battery': False}, doc_ids=[batteryObj.doc_id])
-
-    sensor = table.get(tinydb.Query().rSensor.exists())['rSensor']
-    if sensor != 'None':
-        irSensor = IRSensor(variant=sensor)
-
-    audio = table.get(tinydb.Query().audio.exists())['audio']
-    if audio != 'None':
-        sounddev = Sound(audio)
-
-    liquid_reward = table.get(tinydb.Query().lReward.exists())['lReward']
-    if liquid_reward != 'None':
-        liqrew = LiqReward(variant=liquid_reward)
-
-    hardware_initialized = True
 
 
 #    food_reward = table.get(tinydb.Query().lReward.exists())['fReward']
 #    if food_reward != 'None':
 #        foodrew = FoodReward(variant=food_reward)
 
-def initialize_logging():
-    if not os.path.isdir(logPath):
-        os.mkdir(logPath)
-    table = touchDB.table('settings')
-    syncOpt = table.get(tinydb.Query().syncOn.exists())['syncOn']
 
-    # if syncOpt:
-    #     # wait for time synchronization
-    #     msg = piSynchronizeTime()
-    # else:
-    #     msg = 'Synchronizing time disabled'
-    msg = 'Synchronizing time disabled'
-
-    # Initialize logging
-    #formatDate = '%Y/%m/%d@@%H:%M:%S'
-    sysFormatStr = '%(asctime)s.%(msecs)03d@@%(name)s@@%(levelname)s@@%(message)s'
-    sysFormatter = logging.Formatter(fmt=sysFormatStr, datefmt=formatDate)
-
-
-    log = logging.getLogger()
-    logOpt = table.get(tinydb.Query().logDebugOn.exists())['logDebugOn']
-
-    if logOpt:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
-
-    log.setLevel(level)
-
-    now = datetime.datetime.now().strftime('%Y%m%d-%H%M')
-    os.makedirs(logPath, exist_ok=True)
-
-    # the delay=1 should prevent the file from being opened until used.
-    systemLogFile = os.path.join(logPath, now + '-system.log')
-    systemLogHdlr = logging.FileHandler(systemLogFile, mode='w')
-    systemLogHdlr.setFormatter(sysFormatter)
-    log.addHandler(systemLogHdlr)
- 
-    logger.info('Logging initialized')
-    logger.debug(msg)
-    # logger.debug('{}'.format(showip.getip()))
     
 
 def dbGetAll(subjectType):
@@ -950,27 +919,18 @@ def dbGetAll(subjectType):
 
     return nameList
 
-def database_init():
-    table = touchDB.table('settings')
-    initOpt = table.get(tinydb.Query().init.exists())
 
-    if not initOpt:
-        table.insert({'init': True})
-        table.insert({'syncOn': True})
-        table.insert({'logDebugOn': True})
-        table.insert({'battery': False})
-        table.insert({'audio': 'None'})
-        table.insert({'rSensor': 'None'})
-        table.insert({'lReward': 'None'})
-        table.insert({'fReward': 'None'})
 
 
 def main_menu():
+    global EXIT
+    EXIT = False
+    global RELOAD
+    RELOAD = False
     # Initializes pygame and logging
     #update_list()
     pygame.init()
-    database_init()
-    initialize_logging()
+    logger.info('running in Menu mode')
     logger.debug('Running in Raspberry PI = {}'.format(isRaspberryPI()))
 
     # Creates surface based on machine
@@ -1021,6 +981,10 @@ def main_menu():
     def run_files_menu(menu, surface):
         data = menu.get_input_data()
         files_menu(data, surface)
+    def check_exit():
+        if EXIT:
+            logger.info('restarting in client mode')
+            menu.disable()
 
     # Creates initial buttons
     frameS = menu.add.frame_h(760, 58)
@@ -1048,16 +1012,16 @@ def main_menu():
 
     # Allows menu to be run
     try:
-        menu.mainloop(surface, fps_limit=30)
+        menu.mainloop(surface, bgfun=check_exit, fps_limit=30)
     except Exception:
         logger.exception('Exception running mainloop')
     logger.info('Exiting Menu')
 
-    return
-
+    return RELOAD
 
 
 if __name__ == "__main__":
+    database_init()
+    initialize_logging()
     main_menu()
-    if not isRaspberryPI():
-        IRSensor(variant='sparkfuncustom')._close()
+    close_IRSensor_thread()
