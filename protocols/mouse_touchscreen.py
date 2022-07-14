@@ -277,7 +277,7 @@ from pygame.locals import (
     K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYDOWN, QUIT, K_x
 )
 import logging
-from return_to_menu import return_to_menu
+from utils.return_to_menu import return_to_menu
 import time
 
 red    = ( 255,   0,   0)
