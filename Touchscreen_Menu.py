@@ -28,6 +28,7 @@ from utils.utils import (
     SCREENWIDTH,
     SCREENHEIGHT
 )
+from utils import utils
 
 
 from email.mime.multipart import MIMEMultipart
@@ -60,8 +61,7 @@ SELECTED_FILE_PATH = [""]
 FILE_LIST = []
 FILE_NAMES = []
 
-EXIT = False
-RELOAD = False
+
 def update_list():
     """
     Updates email list to choose from in send_data menu
@@ -462,10 +462,8 @@ def server_menu(surface):
         msg = 'Attempting to connect to {}\nApplication will restart'.format(get_server())
         window_message(surface, msg, header='Confirmation')
         serverMenu.disable()
-        global RELOAD
-        RELOAD = True
-        global EXIT
-        EXIT = True
+        utils.RELOAD = True
+        utils.EXIT = True
         
 
 
@@ -923,10 +921,8 @@ def dbGetAll(subjectType):
 
 
 def main_menu():
-    global EXIT
-    EXIT = False
-    global RELOAD
-    RELOAD = False
+    utils.EXIT = False
+    utils.RELOAD = False
     # Initializes pygame and logging
     #update_list()
     pygame.init()
@@ -982,7 +978,7 @@ def main_menu():
         data = menu.get_input_data()
         files_menu(data, surface)
     def check_exit():
-        if EXIT:
+        if utils.EXIT:
             logger.info('restarting in client mode')
             menu.disable()
 
@@ -1017,7 +1013,7 @@ def main_menu():
         logger.exception('Exception running mainloop')
     logger.info('Exiting Menu')
 
-    return RELOAD
+    return utils.RELOAD
 
 
 if __name__ == "__main__":
