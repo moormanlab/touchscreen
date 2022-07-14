@@ -3,13 +3,13 @@ import pygame
 from abc import ABC, abstractmethod
 import time
 
-from hal import isRaspberryPI, LiqReward, IRSensor, Sound
-from keyboard import keyboard
-from utils import POINTERPRESSED, POINTERMOTION, POINTERRELEASED, getPosition, tsColors
-from return_to_menu import return_to_menu
-import shapes
-from sound import tTone
-from csv_logging import CSVLogger
+from hardware.hal import isRaspberryPI, LiqReward, IRSensor, Sound
+from utils.keyboard import keyboard
+from utils.utils import POINTERPRESSED, POINTERMOTION, POINTERRELEASED, getPosition, tsColors
+from utils.return_to_menu import return_to_menu
+from utils import shapes
+from hardware.sound import tTone
+from utils.csv_logging import CSVLogger
 
 logger = logging.getLogger('TouchProtocols')
 
