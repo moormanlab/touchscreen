@@ -38,6 +38,8 @@ def getPosition(event):
 
 ##########################
 RUNNING_PROTOCOL = None
+EXIT = False
+RELOAD = False
 
 touchDBFile = 'touchDB.json'
 protocolsPath = 'protocols'
