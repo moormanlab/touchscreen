@@ -18,6 +18,7 @@ select `Interface Options` and select and enable
  - Serial Port
  	- when prompted about a login shell over serial, respond **No**
  	- when promted about serial port hardware, respond **Yes**
+ 
  once all Interface Options have been enabled, select Finish
 
 Next, to connect to WiFi run `sudo nano /etc/wpa_supplicant/wpa_supplicant.conf`
@@ -78,7 +79,7 @@ sudo apt upgrade -y
 sudo apt install -y python3-virtualenv 
 cd ~
 rm -rf touchscreen touchenv
-git clone https://github.com/moormanlab/touchscreen
+git clone -b client https://github.com/moormanlab/touchscreen
 python3 -m venv touchenv
 source ~/touchenv/bin/activate
 pip install --upgrade pip setuptools
