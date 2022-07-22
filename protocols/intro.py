@@ -1,7 +1,7 @@
 from touchscreen_protocol import Protocol, POINTERPRESSED, POINTERMOTION, POINTERRELEASED, tTone, tsColors
 
 ir_tone = tTone(frequency = 2000, duration = 0.2, amplitude = 0.03) # tone when ir is broken
-screen_tone = tTone(frequency = 4000, duration = 0.2, amplitude = 0.03) # tone when screen is touched
+screen_tone = tTone(frequency = 2000, duration = 0.2, amplitude = 0.03) # tone when screen is touched
 reward_size = 1 # 10 ul
 class ClassicalConditioning(Protocol):
 	"""
