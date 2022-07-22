@@ -208,7 +208,6 @@ class EventClient(threading.Thread):
     def join(self):
         self._stopevent.set()
         try:
-            self.client.send(json.dumps({'status': 'offline'}))
             self.client.close()
         except websocket.WebSocketException as e:
             logger.exception(e)
@@ -219,7 +218,6 @@ class EventClient(threading.Thread):
         self._stopevent.clear()
         try:
             self.client.connect(self.__url, cookie=self.__cookies)
-            self.client.send(json.dumps({'status': 'online'}))
         except websocket.WebSocketException as e:
             logger.exception(e)
             utils.EXIT = True
@@ -301,6 +299,21 @@ class ClientManager:
         except requests.exceptions.RequestException as e:
             logger.exception(e)
 
+    def sync_status(self, status, retries=1):
+        url = self.get_url('api', 'devices', 'status')
+        payload = {'status': status}
+        try:
+            r = requests.put(url, params=payload, cookies=self.__cookies)
+        except requests.exceptions.RequestException as e:
+            logger.exception(e)
+        else:
+            if r.ok:
+                return
+            elif retries > 0:
+                self.get_token()
+                self.sync_status(status=status, retries=retries - 1)
+            else:
+                logger.error(f'could not set remote status to: {status}, message: {r.json().get("detail")}')
 
     
     def register(self):

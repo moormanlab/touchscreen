@@ -23,7 +23,7 @@ logger = logging.getLogger('TouchClient')
 
 
 
-def protocol_run(protocol, surface, data):
+def protocol_run(protocol, surface, data, client):
     """create and run the protocol"""
     logger.debug('Starting protocol {}'.format(protocol.__name__))
     initialize_hardware()
@@ -41,6 +41,7 @@ def protocol_run(protocol, surface, data):
         userLogHdlr.close()
 
         utils.RUNNING_PROTOCOL = protoc # reference so that the event thread can call quit method
+        client.sync_status('running %s' % type(protoc).__name__)
         protoc._init(userLogHdlr)
         protoc._run()
         protoc._end()
@@ -51,6 +52,7 @@ def protocol_run(protocol, surface, data):
 
     finally:
         utils.RUNNING_PROTOCOL = None
+        client.sync_status(None)
 
 def import_protocols(filename):
     """try importing protocol"""
@@ -70,14 +72,14 @@ def import_protocols(filename):
     return classes
 
 
-def handle_protocol(surface, data):
+def handle_protocol(surface, data, client):
     """run protocol if it exists locally"""
     protocols = import_protocols(data.get('filename'))
     for proto in protocols:
         if proto[0] == data.get('protocol'):
             for base in proto[1].__bases__:
                 if base.__name__ == 'Protocol':
-                    protocol_run(proto[1], surface, (data.get('subject'), data.get('experimenter')))
+                    protocol_run(proto[1], surface, (data.get('subject'), data.get('experimenter')), client)
                     return
 def shutdown():
     if isRaspberryPI():
@@ -85,14 +87,16 @@ def shutdown():
         subprocess.call(['sudo', 'sync'])
         time.sleep(1)
         subprocess.call(['sudo', 'shutdown', '-h', 'now'])
-def restart():
+def restart(client):
     if isRaspberryPI():
+        client.sync_status('Rebooting Device')
         logger.info('Restarting Raspberry pi')
         subprocess.call(['sudo', 'sync'])
         time.sleep(1)
         subprocess.call(['sudo', 'shutdown', '-r', 'now'])
-def update():
+def update(client):
     if isRaspberryPI():
+        client.sync_status('Updating Device')
         ret = subprocess.call(['scripts/update.sh'])
         if ret == 0:
             logger.info('Successfully updated software, restarting application')
@@ -108,16 +112,16 @@ def quit():
     utils.RELOAD = False
 def no_event(event):
     logger.error(f'No event: {event}')
-def run(surface, data):
+def run(surface, data, client):
     """delegate the event"""
     # note that the 'stop' event is handled in the EventClient thread
     events = {
-        'run': {'function': handle_protocol, 'args': (surface, data)},
+        'run': {'function': handle_protocol, 'args': (surface, data, client)},
         'quit': {'function': quit},
         'menu': {'function': menu_mode},
-        'update': {'function': update},
+        'update': {'function': update, 'args': (client,)},
         'shutdown': {'function': shutdown},
-        'restart': {'function': restart}
+        'restart': {'function': restart, 'args': (client,)}
     }
     event = events.get(data.get('event'), {'function': no_event, 'args': (data.get('event'),)})
     event.get('function')(*event.get('args',()), **event.get('kwargs', {}))
@@ -147,7 +151,7 @@ def main_menu():
         except queue.Empty:
             pass 
         else:
-            run(surface, data)
+            run(surface, data, client)
             q.task_done()
 
     def bg_tasks():
