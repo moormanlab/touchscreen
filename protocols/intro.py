@@ -63,7 +63,7 @@ class ObservationalLearning(Protocol):
 		self._lockout = False
 		self._duration = None
 		width, height = self.screen.get_size()
-		self.square_kwargs = {'color': (0, 65, 65), 'center': (width//2, height//2), 'size': (height*0.3, height*0.3)}
+		self.square_kwargs = {'color': (255, 255, 255), 'center': (width//3, 3*height//4), 'size': (int(height*0.25), int(height*0.25))}
 		self._start = self.now()
 		self.wait = False
 
@@ -123,7 +123,7 @@ class OperantConditioningEasy(Protocol):
 		self.drops_available = 0
 		self.rect_start_time = 0
 		width, height = self.screen.get_size()
-		self.square_kwargs = {'color': (0, 65, 65), 'center': (width//2, height//2), 'size': (height*0.3, height*0.3)}
+		self.square_kwargs = {'color': (255, 255, 255), 'center': (width//3, 3*height//4), 'size': (int(height*0.25), int(height*0.25))}
 
 	def sensor_handler_in(self):
 		self.csvlogger.log(event='subject entered well')
@@ -158,7 +158,7 @@ class OperantConditioning(Protocol):
 	"""
 	STAGE 4
 	---
-	When the subject touches the screen, the ability to get a reward is unlocked for 20 seconds.
+	When the subject touches the screen, the ability to get a reward is unlocked for 5 seconds.
 	The reward will be available for 20 seconds after *first screen touch*. Touching the screen again during the 20 seconds will not extend the window.
 	When the reward is unlocked (by screen touch), the screen will turn on (for the 20 seconds), and a tone will be played.
 	when the subject breaks the ir beam, the screen will turn off, and the window to touch the screen will reset
@@ -176,7 +176,7 @@ class OperantConditioning(Protocol):
 		self._duration = None
 		self._start = self.now()
 		width, height = self.screen.get_size()
-		self.square_kwargs = {'color': (0, 65, 65), 'center': (width//2, height//2), 'size': (height*0.3, height*0.3)}
+		self.square_kwargs = {'color': (255, 255, 255), 'center': (width//3, 3*height//4), 'size': (int(height*0.25), int(height*0.25))}
 	
 	def allow_reward(self, duration):
 		if not self._reward_available:
@@ -224,7 +224,7 @@ class OperantConditioning(Protocol):
 			self.screen.clean()
 
 		if not self.reward_available() and event.type == POINTERPRESSED:
-			self.allow_reward(20)
+			self.allow_reward(5)
 			self.sound.play(screen_tone)
 			self.draw.rect(**self.square_kwargs)
 

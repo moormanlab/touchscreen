@@ -7,9 +7,9 @@ reward_size = 1 # 10 ul
 
 class Operant(Protocol):
 	"""
-	When the subject touches the square, the ability to get a reward is unlocked for 20 seconds, and a tone is played.
+	When the subject touches the square, the ability to get a reward is unlocked for 5 seconds, and a tone is played.
 	The square will disapear during the 20 seconds the reward is available.
-	when the subject breaks the ir beam, a reward is dispensed, a new square will randomly spawn, 
+	when the subject breaks the ir beam, a reward is dispensed, a new square will spawn, 
 	and the window to touch the screen will reset
 	"""
 	def init(self):
@@ -24,8 +24,12 @@ class Operant(Protocol):
 		self._duration = None
 		self._start = self.now()
 		width, height = self.screen.get_size()
-		self.square_kwargs = {'color': (0, 65, 65), 'center': (width//3, 3*height//4), 'size': (int(height*0.25), int(height*0.25))}
-	
+		self.square_kwargs = {'color': (255, 255, 255), 'center': (width//3, 3*height//4), 'size': (int(height*0.25), int(height*0.25))}
+		self.blank_square_kwargs = self.square_kwargs.copy()
+		self.blank_square_kwargs['color'] = (0, 0, 0)
+		self.frame_kwargs = {'color': (255, 255, 255), 'center': (width//3, 3*height//4), 'size': (int(height*0.25)+10, int(height*0.25)+10)}
+		
+
 	def allow_reward(self, duration):
 		if not self._reward_available:
 			self._reward_available = True
@@ -63,18 +67,20 @@ class Operant(Protocol):
 		self.csvlogger.log(event='subject left well')
 
 	def main(self, event):
+		self.frame = self.draw.rect(**self.frame_kwargs)
 		if self.reward_missed():
 			self.rewards_missed += 1
 			self.csvlogger.log(event='reward missed', rewards_missed=self.rewards_missed)
 			self.cancel_reward()
 
 		if not self.reward_available():
-			self.rect = self.draw.rect(**self.square_kwargs)
-
-		if not self.reward_available() and event.type == POINTERPRESSED and self.rect.collidepoint(event.position):
-			self.allow_reward(20)
+			self.draw.rect(**self.blank_square_kwargs)
+			
+		
+		if not self.reward_available() and event.type == POINTERPRESSED and self.frame.collidepoint(event.position):
+			self.allow_reward(5)
 			self.sound.play(screen_tone_good)
-			self.screen.clean()
+			self.draw.rect(**self.square_kwargs)
 
 		self.screen.update()
 
@@ -82,5 +88,3 @@ class Operant(Protocol):
 		self.csvlogger.log(event='Training ended', reward_count=self.reward_count, rewards_missed=self.rewards_missed, no_rewards=self.no_rewards)
 
 
-
-	
