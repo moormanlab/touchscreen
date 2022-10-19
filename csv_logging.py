@@ -30,6 +30,8 @@ class CSVLogger:
         return self.__is_active
 
     def log(self, method=None, event=None, **kwargs):
+        if event is not None and not 'event' in self._header and kwargs == {}: # quick fix. will remove soon
+            return
         fields = {'datetime': datetime.datetime.now().strftime('%H:%M:%S.%f'), 'runtime': self.time_delta()}
         if event.__class__.__name__ == 'tsEvent': # bad practice but don't want to deal with circular import errors
             fields.update({'event': event.get_type(), 'x-cord': event.position[0], 'y-cord': event.position[1]})

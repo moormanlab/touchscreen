@@ -13,10 +13,10 @@ class Operant(Protocol):
 	and the window to touch the screen will reset
 	"""
 	def init(self):
-		self.csvlogger.configure(['reward_count', 'rewards_missed', 'no_rewards'])
+		self.csvlogger.configure(['datetime', 'runtime', 'info', 'x', 'y', 'reward_count', 'rewards_missed', 'no_rewards'], replace=True)
 		self.csvlogger.start()
 		self.liqrew.set_drop_amount(reward_size)
-		self.csvlogger.log(event=f'{type(self).__name__} started, reward set to {reward_size*10} ul')
+		self.csvlogger.log(info=f'{type(self).__name__} started, reward set to {reward_size*10} ul')
 		self.reward_count = 0
 		self.rewards_missed = 0
 		self.no_rewards = 0
@@ -51,26 +51,26 @@ class Operant(Protocol):
 		return False
 
 	def sensor_handler_in(self):
-		self.csvlogger.log(event='subject entered well')
+
 		if self.reward_available():
 			self.liqrew.drop()
 			self.reward_count += 1
-			self.csvlogger.log(event='reward given', reward_count=self.reward_count)
+			self.csvlogger.log(info='subject entered well: reward given', reward_count=self.reward_count)
 			self.sound.play(ir_tone)
 			self.cancel_reward()
 		else:
 			self.no_rewards += 1
-			self.csvlogger.log(event='no reward', no_rewards=self.no_rewards)
+			self.csvlogger.log(info='subject entered well: no reward', no_rewards=self.no_rewards)
 
 
 	def sensor_handler_out(self):
-		self.csvlogger.log(event='subject left well')
+		self.csvlogger.log(info='subject left well')
 
 	def main(self, event):
 		self.frame = self.draw.rect(**self.frame_kwargs)
 		if self.reward_missed():
 			self.rewards_missed += 1
-			self.csvlogger.log(event='reward missed', rewards_missed=self.rewards_missed)
+			self.csvlogger.log(info='reward missed', rewards_missed=self.rewards_missed)
 			self.cancel_reward()
 
 		if not self.reward_available():
@@ -81,7 +81,9 @@ class Operant(Protocol):
 			self.allow_reward(5)
 			self.sound.play(screen_tone_good)
 			self.draw.rect(**self.square_kwargs)
-
+			self.csvlogger.log(info='pointer pressed', x=event.position[0], y=event.position[1])
+		elif event.type == POINTERPRESSED and self.frame.collidepoint(event.position):
+			self.csvlogger.log(info='invalid press', x=event.position[0], y=event.position[1])
 		self.screen.update()
 
 	def end(self):
